@@ -1,6 +1,6 @@
 -- ==================================================
 -- BASE DE DATOS COMPLETA: ERP B2B PREMIUM
--- Generado: 2026-06-19T02:44:19.929Z
+-- Generado: 2026-06-19T14:46:03.236Z
 -- ==================================================
 
 -- --------------------------------------------------
@@ -4058,15 +4058,11 @@ CREATE OR REPLACE FUNCTION check_and_dispatch_low_stock_events(
     p_tenant_id uuid,
     p_item_id uuid
 ) RETURNS void AS $$
-DECLARE
-    v_total_avail decimal(18,4) := 0;
-    v_min_stock decimal(18,4) := 0;
-    v_reorder_pt decimal(18,4) := 0;
-    v_item_code varchar(50);
-    v_item_name varchar(250);
-    v_user_id uuid;
+BEGIN
+    -- Stub: Redefinida con cuerpo completo más abajo
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- Redefinimos esta función para que tenga cuerpo completo
 CREATE OR REPLACE FUNCTION check_and_dispatch_low_stock_events(
