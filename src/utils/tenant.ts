@@ -18,7 +18,6 @@ export const MOCK_TENANTS: Record<string, TenantConfig> = {
   default: {
     name: "ERP B2B Premium",
     primaryColor: "240 5.9% 10%", // Default Dark
-    theme: "dark",
   },
 };
 

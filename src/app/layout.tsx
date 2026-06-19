@@ -32,10 +32,33 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
+          {/* Synchronous inline script placed inside ThemeProvider to execute immediately after next-themes' script and override theme/colors for tenants */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                try {
+                  const params = new URLSearchParams(window.location.search);
+                  const tenant = params.get('tenant');
+                  let primary = null;
+                  if (tenant === 'apex') {
+                    document.documentElement.classList.add('dark');
+                    primary = '142 72% 29%';
+                  } else if (tenant === 'acme') {
+                    document.documentElement.classList.remove('dark');
+                    primary = '215 80% 50%';
+                  }
+                  if (primary) {
+                    document.documentElement.style.setProperty('--primary', primary);
+                    document.documentElement.style.setProperty('--ring', primary);
+                  }
+                } catch (e) {}
+              `,
+            }}
+          />
           {children}
         </ThemeProvider>
       </body>
