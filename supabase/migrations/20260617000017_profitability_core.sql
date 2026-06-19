@@ -8,7 +8,7 @@ SELECT
     j.tenant_id,
     j.id AS job_id,
     j.job_code,
-    j.name AS job_name,
+    j.title AS job_name,
     j.client_id,
     c.name AS client_name,
     COALESCE(i.total_invoiced, 0.00) AS total_invoiced,

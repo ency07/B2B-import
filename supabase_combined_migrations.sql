@@ -1,6 +1,6 @@
 -- ==================================================
 -- BASE DE DATOS COMPLETA: ERP B2B PREMIUM
--- Generado: 2026-06-19T14:46:03.236Z
+-- Generado: 2026-06-19T14:49:21.399Z
 -- ==================================================
 
 -- --------------------------------------------------
@@ -7024,7 +7024,7 @@ SELECT
     j.tenant_id,
     j.id AS job_id,
     j.job_code,
-    j.name AS job_name,
+    j.title AS job_name,
     j.client_id,
     c.name AS client_name,
     COALESCE(i.total_invoiced, 0.00) AS total_invoiced,
