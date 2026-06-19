@@ -16,7 +16,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 2. Helper: Sumar Horas Hábiles (Business Hours SLA)
-CREATE OR REPLACE FUNCTION add_business_hours(p_start timestamp, p_hours integer)
+CREATE OR REPLACE FUNCTION add_business_hours(p_start timestamptz, p_hours integer)
 RETURNS timestamp AS $$
 DECLARE
     v_result timestamp := p_start;

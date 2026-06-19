@@ -167,18 +167,30 @@ BEGIN
         action_type := 'DELETE';
         old_data := to_jsonb(OLD);
         entity_id_val := OLD.id;
-        current_tenant_id := OLD.tenant_id;
+        IF (TG_TABLE_NAME = 'tenants') THEN
+            current_tenant_id := OLD.id;
+        ELSE
+            current_tenant_id := OLD.tenant_id;
+        END IF;
     ELSIF (TG_OP = 'UPDATE') THEN
         action_type := 'UPDATE';
         old_data := to_jsonb(OLD);
         new_data := to_jsonb(NEW);
         entity_id_val := NEW.id;
-        current_tenant_id := NEW.tenant_id;
+        IF (TG_TABLE_NAME = 'tenants') THEN
+            current_tenant_id := NEW.id;
+        ELSE
+            current_tenant_id := NEW.tenant_id;
+        END IF;
     ELSIF (TG_OP = 'INSERT') THEN
         action_type := 'CREATE';
         new_data := to_jsonb(NEW);
         entity_id_val := NEW.id;
-        current_tenant_id := NEW.tenant_id;
+        IF (TG_TABLE_NAME = 'tenants') THEN
+            current_tenant_id := NEW.id;
+        ELSE
+            current_tenant_id := NEW.tenant_id;
+        END IF;
     END IF;
 
     -- Intentar obtener el user_id operativo desde auth.uid() de Supabase
@@ -190,9 +202,17 @@ BEGIN
     -- Si no hay usuario en sesión (p. ej. scripts o carga inicial), usar valores del registro si aplica
     IF (current_tenant_id IS NULL) THEN
         IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
-            current_tenant_id := NEW.tenant_id;
+            IF (TG_TABLE_NAME = 'tenants') THEN
+                current_tenant_id := NEW.id;
+            ELSE
+                current_tenant_id := NEW.tenant_id;
+            END IF;
         ELSE
-            current_tenant_id := OLD.tenant_id;
+            IF (TG_TABLE_NAME = 'tenants') THEN
+                current_tenant_id := OLD.id;
+            ELSE
+                current_tenant_id := OLD.tenant_id;
+            END IF;
         END IF;
     END IF;
 
@@ -252,6 +272,9 @@ ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION is_platform_super_admin()
 RETURNS boolean AS $$
 BEGIN
+    IF session_user = 'postgres' THEN
+        RETURN true;
+    END IF;
     RETURN COALESCE(
         (SELECT is_platform_user FROM users WHERE auth_user_id = auth.uid() LIMIT 1),
         false

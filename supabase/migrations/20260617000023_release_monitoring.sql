@@ -23,4 +23,4 @@ SELECT
     mean_exec_time,
     rows
 FROM 
-    pg_catalog.pg_stat_statements;
+    extensions.pg_stat_statements;

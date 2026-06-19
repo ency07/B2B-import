@@ -15,6 +15,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 1b. Crear Función Auxiliar para Validar Roles del Usuario
+CREATE OR REPLACE FUNCTION current_user_has_role(p_role_code varchar)
+RETURNS boolean AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = get_current_user_id()
+          AND r.role_code = p_role_code
+          AND r.status = 'Activo'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 2. Crear Tabla de Clientes (clients)
 CREATE TABLE clients (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -2,13 +2,12 @@
 -- Archivo: supabase/migrations/20260617000021_performance_hardening.sql
 
 -- 1. Capa Core y Usuarios
-CREATE INDEX idx_users_site_id ON users(site_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_area_id ON users(area_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_manager_id ON users(manager_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_site_id ON users(site_id);
+CREATE INDEX idx_users_area_id ON users(area_id);
+CREATE INDEX idx_users_manager_id ON users(manager_id);
 
 -- 2. Capa de Requerimientos y Documentos
 CREATE INDEX idx_requirements_contact_id ON requirements(contact_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_requirements_site_id ON requirements(site_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_requirements_created_by ON requirements(created_by) WHERE deleted_at IS NULL;
 
 -- 3. Capa de Cotizaciones
@@ -41,6 +40,6 @@ CREATE INDEX idx_warranty_interventions_assigned ON warranty_interventions(assig
 CREATE INDEX idx_warranty_interventions_created_by ON warranty_interventions(created_by) WHERE deleted_at IS NULL;
 
 -- 8. Capa de Configuración, Notificaciones y Logs
-CREATE INDEX idx_notifications_template ON notifications(template_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_notifications_template_partial ON notifications(template_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_notifications_created_by ON notifications(created_by) WHERE deleted_at IS NULL;
-CREATE INDEX idx_user_access_logs_created_by ON user_access_logs(created_by) WHERE deleted_at IS NULL;
+

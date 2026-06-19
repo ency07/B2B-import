@@ -17,7 +17,7 @@ export async function getClients(tenantCode?: string | null) {
   const tenantId = await getTenantId(tenantCode);
   const { data, error } = await supabaseAdmin
     .from("clients")
-    .select("id, tax_id, name, segment, status")
+    .select("id, tax_id, legal_name, industry, status")
     .eq("tenant_id", tenantId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -45,10 +45,10 @@ export async function getClients(tenantCode?: string | null) {
       return {
         id: client.id,
         taxId: client.tax_id,
-        name: client.name,
-        segment: client.segment,
+        name: client.legal_name,
+        segment: client.industry || "General",
         totalInvoiced,
-        status: client.status as "ACTIVO" | "SUSPENDIDO" | "PENDIENTE",
+        status: (client.status === "ACTIVO" ? "ACTIVO" : client.status === "INACTIVO" ? "SUSPENDIDO" : "PENDIENTE") as "ACTIVO" | "SUSPENDIDO" | "PENDIENTE",
       };
     })
   );
@@ -61,6 +61,9 @@ export async function createClient(
   clientData: { taxId: string; name: string; segment: string; email: string }
 ) {
   const tenantId = await getTenantId(tenantCode);
+  const userId = tenantId === "b0000000-0000-0000-0000-000000000000"
+    ? "b9000000-0000-0000-0000-000000000000"
+    : "a9000000-0000-0000-0000-000000000000";
   
   // First, verify if client already exists (to prevent duplicate constraint error)
   const { data: existing } = await supabaseAdmin
@@ -81,9 +84,12 @@ export async function createClient(
     .insert({
       tenant_id: tenantId,
       tax_id: clientData.taxId,
-      name: clientData.name,
-      segment: clientData.segment,
+      legal_name: clientData.name,
+      industry: clientData.segment,
       email: clientData.email,
+      client_type: "Empresa",
+      country: "México",
+      assigned_user_id: userId,
       status: "ACTIVO",
     })
     .select()
