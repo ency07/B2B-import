@@ -6,26 +6,87 @@ import { LayoutProvider } from "@/components/layout-context";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { useTheme } from "next-themes";
-import { getTenantConfig } from "@/utils/tenant";
+import { getTenantConfig, parseToHslChannels } from "@/utils/tenant";
+import { getTenantSettings } from "@/app/actions";
+
+interface ActiveConfig {
+  name: string;
+  primaryColor: string;
+  theme?: "light" | "dark";
+}
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const tenantParam = searchParams.get("tenant");
-  const config = getTenantConfig(tenantParam);
   const { resolvedTheme } = useTheme();
 
+  // State to hold the active branding configuration
+  const [activeConfig, setActiveConfig] = React.useState<ActiveConfig | null>(null);
+
+  // 1. Load configuration from localStorage instantly (or fall back to static mock configs)
   React.useEffect(() => {
+    const fallback = getTenantConfig(tenantParam);
+    const cacheKey = `tenant_config_${tenantParam || "default"}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        setActiveConfig(JSON.parse(cached));
+      } catch (e) {
+        setActiveConfig(fallback);
+      }
+    } else {
+      setActiveConfig(fallback);
+    }
+  }, [tenantParam]);
+
+  // 2. Perform background sync from Supabase to update the local configuration
+  React.useEffect(() => {
+    async function syncSettings() {
+      try {
+        const settings = await getTenantSettings(tenantParam);
+        const fallback = getTenantConfig(tenantParam);
+        
+        // If settings exist, parse the primary color and razon_social
+        const dbColor = settings.color_primario || fallback.primaryColor;
+        const channels = parseToHslChannels(dbColor);
+        
+        const syncedConfig: ActiveConfig = {
+          name: settings.razon_social || fallback.name,
+          primaryColor: channels,
+          theme: tenantParam === "apex" ? "dark" : tenantParam === "acme" ? "light" : undefined
+        };
+
+        const cacheKey = `tenant_config_${tenantParam || "default"}`;
+        const cachedStr = localStorage.getItem(cacheKey);
+        
+        // Update state and cache if different
+        if (JSON.stringify(syncedConfig) !== cachedStr) {
+          localStorage.setItem(cacheKey, JSON.stringify(syncedConfig));
+          setActiveConfig(syncedConfig);
+        }
+      } catch (err) {
+        console.error("Error syncing branding settings from Supabase:", err);
+      }
+    }
+    syncSettings();
+  }, [tenantParam]);
+
+  // 3. Apply classes and custom style properties dynamically on DOM
+  React.useEffect(() => {
+    if (!activeConfig) return;
     const root = document.documentElement;
-    if (config.theme) {
-      if (config.theme === "dark") {
+    const theme = activeConfig.theme;
+
+    if (theme) {
+      if (theme === "dark") {
         root.classList.add("dark");
       } else {
         root.classList.remove("dark");
       }
-      root.style.setProperty("--primary", config.primaryColor);
-      root.style.setProperty("--ring", config.primaryColor);
+      root.style.setProperty("--primary", activeConfig.primaryColor);
+      root.style.setProperty("--ring", activeConfig.primaryColor);
     } else {
-      // Sync with next-themes and clean up styling when default tenant is active
+      // Sync with global theme setting when default tenant
       if (resolvedTheme === "dark") {
         root.classList.add("dark");
       } else {
@@ -34,18 +95,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       root.style.removeProperty("--primary");
       root.style.removeProperty("--ring");
     }
-  }, [config, resolvedTheme]);
+  }, [activeConfig, resolvedTheme]);
 
   return (
     <LayoutProvider>
       {/* Dynamic CSS override for White Label primary colors, only for specific tenants */}
-      {config.theme && (
+      {activeConfig && activeConfig.theme && (
         <style
           dangerouslySetInnerHTML={{
             __html: `
               :root {
-                --primary: ${config.primaryColor} !important;
-                --ring: ${config.primaryColor} !important;
+                --primary: ${activeConfig.primaryColor} !important;
+                --ring: ${activeConfig.primaryColor} !important;
               }
             `,
           }}

@@ -43,17 +43,34 @@ export default function RootLayout({
                 try {
                   const params = new URLSearchParams(window.location.search);
                   const tenant = params.get('tenant');
-                  let primary = null;
-                  if (tenant === 'apex') {
-                    document.documentElement.classList.add('dark');
-                    primary = '142 72% 29%';
-                  } else if (tenant === 'acme') {
-                    document.documentElement.classList.remove('dark');
-                    primary = '215 80% 50%';
-                  }
-                  if (primary) {
-                    document.documentElement.style.setProperty('--primary', primary);
-                    document.documentElement.style.setProperty('--ring', primary);
+                  if (tenant) {
+                    const cached = localStorage.getItem('tenant_config_' + tenant);
+                    if (cached) {
+                      const config = JSON.parse(cached);
+                      if (config.theme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                      } else {
+                        document.documentElement.classList.remove('dark');
+                      }
+                      if (config.primaryColor) {
+                        document.documentElement.style.setProperty('--primary', config.primaryColor);
+                        document.documentElement.style.setProperty('--ring', config.primaryColor);
+                      }
+                    } else {
+                      // Fallback a valores estáticos iniciales
+                      let primary = null;
+                      if (tenant === 'apex') {
+                        document.documentElement.classList.add('dark');
+                        primary = '142 72% 29%';
+                      } else if (tenant === 'acme') {
+                        document.documentElement.classList.remove('dark');
+                        primary = '215 80% 50%';
+                      }
+                      if (primary) {
+                        document.documentElement.style.setProperty('--primary', primary);
+                        document.documentElement.style.setProperty('--ring', primary);
+                      }
+                    }
                   }
                 } catch (e) {}
               `,

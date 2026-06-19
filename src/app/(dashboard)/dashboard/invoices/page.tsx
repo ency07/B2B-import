@@ -4,6 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useSearchParams } from "next/navigation";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -15,11 +16,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Search, ChevronLeft, ChevronRight, FileText, Plus, Sparkles } from "lucide-react";
+import { ArrowUpDown, Search, ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -53,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getInvoices, createInvoice, getClients } from "@/app/actions";
 
 // Zod schema for invoice creation
 const invoiceSchema = z.object({
@@ -74,19 +77,24 @@ interface Invoice {
   issueDate: string;
   dueDate: string;
   total: number;
-  status: "PAGADA" | "PARCIAL" | "PENDIENTE";
+  status: "PAGADA" | "PARCIAL" | "PENDIENTE" | "PARCIALMENTE_PAGADA";
 }
 
-// Initial mock invoices
-const INITIAL_INVOICES: Invoice[] = [
-  { id: "1", code: "FAC-2026-001", clientName: "Acme Industrial S.A. de C.V.", issueDate: "2026-06-01", dueDate: "2026-07-01", total: 450200.5, status: "PAGADA" },
-  { id: "2", code: "FAC-2026-002", clientName: "Apex Logistics B2B Group", issueDate: "2026-06-10", dueDate: "2026-07-10", total: 890450.0, status: "PARCIAL" },
-  { id: "3", code: "FAC-2026-003", clientName: "Acme Industrial S.A. de C.V.", issueDate: "2026-06-18", dueDate: "2026-07-18", total: 12500.0, status: "PENDIENTE" },
-  { id: "4", code: "FAC-2026-004", clientName: "Distribuidora Comercial del Centro", issueDate: "2026-06-12", dueDate: "2026-07-12", total: 125000.75, status: "PENDIENTE" },
-];
+interface ClientOption {
+  id: string;
+  name: string;
+}
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = React.useState<Invoice[]>(INITIAL_INVOICES);
+  const searchParams = useSearchParams();
+  const tenantParam = searchParams.get("tenant");
+
+  const [invoices, setInvoices] = React.useState<any[]>([]);
+  const [clients, setClients] = React.useState<ClientOption[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -100,28 +108,46 @@ export default function InvoicesPage() {
     },
   });
 
-  const onSubmit = (values: InvoiceFormValues) => {
-    const nextCode = `FAC-2026-00${invoices.length + 1}`;
-    const today = new Date().toISOString().split("T")[0];
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    const dueDateStr = nextMonth.toISOString().split("T")[0];
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const invoicesData = await getInvoices(tenantParam);
+      const clientsData = await getClients(tenantParam);
+      
+      setInvoices(invoicesData);
+      setClients(clientsData.map(c => ({ id: c.id, name: c.name })));
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantParam]);
 
-    const newInvoice: Invoice = {
-      id: String(invoices.length + 1),
-      code: nextCode,
-      clientName: values.clientName,
-      issueDate: today,
-      dueDate: dueDateStr,
-      total: Number(values.amount),
-      status: "PENDIENTE",
-    };
-    setInvoices((prev) => [newInvoice, ...prev]);
-    setIsDialogOpen(false);
-    form.reset();
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const onSubmit = async (values: InvoiceFormValues) => {
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      await createInvoice(tenantParam, {
+        clientName: values.clientName,
+        concept: values.description,
+        amount: Number(values.amount)
+      });
+      setIsDialogOpen(false);
+      form.reset();
+      await loadData();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Ocurrió un error al emitir la factura.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const columns: ColumnDef<Invoice>[] = [
+  const columns: ColumnDef<any>[] = [
     {
       accessorKey: "code",
       header: "Folio Factura",
@@ -130,38 +156,35 @@ export default function InvoicesPage() {
     {
       accessorKey: "clientName",
       header: "Cliente B2B",
-      cell: ({ row }) => <div className="font-semibold">{row.getValue("clientName")}</div>,
+      cell: ({ row }) => <div className="font-semibold text-foreground">{row.getValue("clientName")}</div>,
     },
     {
-      accessorKey: "issueDate",
+      accessorKey: "date",
       header: "Fecha Emisión",
-      cell: ({ row }) => <span className="text-xs font-mono">{row.getValue("issueDate")}</span>,
+      cell: ({ row }) => <span className="text-xs font-mono">{row.getValue("date")}</span>,
     },
     {
-      accessorKey: "dueDate",
-      header: "Vencimiento",
-      cell: ({ row }) => {
-        const dueDate = new Date(row.getValue("dueDate"));
-        const today = new Date();
-        const isOverdue = dueDate < today && row.original.status !== "PAGADA";
-        return (
-          <span className={`text-xs font-mono ${isOverdue ? "text-destructive font-bold" : ""}`}>
-            {row.getValue("dueDate")}
-            {isOverdue && " (VENCIDO)"}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "total",
+      accessorKey: "totalAmount",
       header: () => <div className="text-right font-semibold">Monto Total</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("total"));
+        const amount = parseFloat(row.getValue("totalAmount"));
         const formatted = new Intl.NumberFormat("es-MX", {
           style: "currency",
           currency: "MXN",
         }).format(amount);
-        return <div className="text-right font-mono font-semibold">{formatted}</div>;
+        return <div className="text-right font-mono font-semibold text-foreground">{formatted}</div>;
+      },
+    },
+    {
+      accessorKey: "paidAmount",
+      header: () => <div className="text-right font-semibold text-emerald-600 dark:text-emerald-400">Cobrado</div>,
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("paidAmount") || "0");
+        const formatted = new Intl.NumberFormat("es-MX", {
+          style: "currency",
+          currency: "MXN",
+        }).format(amount);
+        return <div className="text-right font-mono font-medium text-emerald-600 dark:text-emerald-400">{formatted}</div>;
       },
     },
     {
@@ -171,9 +194,9 @@ export default function InvoicesPage() {
         const status = row.getValue("status") as string;
         let variant: "success" | "warning" | "destructive" | "secondary" = "secondary";
         if (status === "PAGADA") variant = "success";
-        if (status === "PARCIAL") variant = "warning";
-        if (status === "PENDIENTE") variant = "destructive";
-        return <Badge variant={variant} className="text-[10px] font-semibold">{status}</Badge>;
+        if (status === "PARCIALMENTE_PAGADA") variant = "warning";
+        if (status === "PENDIENTE" || status === "EMITIDA") variant = "destructive";
+        return <Badge variant={variant} className="text-[10px] font-semibold">{status === "EMITIDA" ? "PENDIENTE" : status}</Badge>;
       },
     },
   ];
@@ -217,7 +240,7 @@ export default function InvoicesPage() {
         {/* Dialog Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 cursor-pointer">
               <Plus className="w-4 h-4" /> Emitir Factura
             </Button>
           </DialogTrigger>
@@ -228,6 +251,12 @@ export default function InvoicesPage() {
                 Ingresa los conceptos e importe total para generar el registro de venta.
               </DialogDescription>
             </DialogHeader>
+
+            {errorMsg && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                {errorMsg}
+              </div>
+            )}
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
@@ -245,9 +274,11 @@ export default function InvoicesPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Acme Industrial S.A. de C.V.">Acme Industrial S.A. de C.V.</SelectItem>
-                          <SelectItem value="Apex Logistics B2B Group">Apex Logistics B2B Group</SelectItem>
-                          <SelectItem value="Distribuidora Comercial del Centro">Distribuidora Comercial del Centro</SelectItem>
+                          {clients.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -289,10 +320,13 @@ export default function InvoicesPage() {
                 />
 
                 <DialogFooter className="pt-4 border-t border-border">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
                     Cancelar
                   </Button>
-                  <Button type="submit">Emitir CFDI</Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? <Spinner size="sm" className="mr-2" /> : null}
+                    Emitir CFDI
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>
@@ -312,70 +346,80 @@ export default function InvoicesPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-border rounded-lg bg-zinc-950/20">
+            <Spinner size="lg" className="text-primary mb-2" />
+            <span className="text-xs text-muted-foreground">Cargando facturas...</span>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        No se encontraron facturas emitidas.
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No se encontraron facturas emitidas.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+            {/* Pagination */}
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-8 w-8 p-0 cursor-pointer"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="h-8 w-8 p-0 cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
+

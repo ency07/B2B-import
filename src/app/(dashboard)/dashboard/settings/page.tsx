@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getTenantConfig } from "@/utils/tenant";
+import { getTenantConfig, parseToHslChannels, formatColorForDb } from "@/utils/tenant";
+import { getTenantSettings, updateTenantSettings } from "@/app/actions";
 
-// Zod schema for settings editing
+// Zod schema for settings editing - relaxed to support Hex, standard HSL, and space-separated HSL channels
 const settingsSchema = z.object({
   companyName: z
     .string()
@@ -36,8 +37,8 @@ const settingsSchema = z.object({
     }),
   primaryColor: z
     .string()
-    .regex(/^\d+ \d+%\t*\d+%$/, {
-      message: "Formato de color primario HSL inválido (ej. '215 80% 50%').",
+    .regex(/^(?:#([A-Fa-f0-9]{3}){1,2}|\d+\s+\d+%\s+\d+%|hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\))$/, {
+      message: "Color primario inválido. Formatos válidos: Hex (#abc, #123456), HSL ('215 80% 50%') o 'hsl(215, 80%, 50%)'.",
     }),
 });
 
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   const tenantParam = searchParams.get("tenant");
   const config = getTenantConfig(tenantParam);
 
+  const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
 
@@ -61,20 +63,77 @@ export default function SettingsPage() {
     },
   });
 
-  const onSubmit = (values: SettingsFormValues) => {
+  // Load latest settings from Supabase
+  React.useEffect(() => {
+    async function loadSettings() {
+      setIsLoading(true);
+      try {
+        const settings = await getTenantSettings(tenantParam);
+        
+        const defaultCompanyName = config.name;
+        const defaultTaxId = tenantParam === "acme" ? "ACM901201TR4" : tenantParam === "apex" ? "APX150508LL2" : "ERP901201TR4";
+        const defaultTelegramToken = "1234567890:AABBCCddEEffGGhhIIjjKKllMM";
+        const defaultPrimaryColor = config.primaryColor;
+
+        form.reset({
+          companyName: settings.razon_social || defaultCompanyName,
+          taxId: settings.rfc || defaultTaxId,
+          telegramToken: settings.telegram_bot_token || defaultTelegramToken,
+          primaryColor: settings.color_primario || defaultPrimaryColor,
+        });
+      } catch (err) {
+        console.error("Error loading settings from Supabase:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadSettings();
+  }, [tenantParam, config, form]);
+
+  const onSubmit = async (values: SettingsFormValues) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSuccess(true);
+    try {
+      // 1. Save settings to Supabase
+      await updateTenantSettings(tenantParam, "EMPRESA", "razon_social", values.companyName);
+      await updateTenantSettings(tenantParam, "EMPRESA", "rfc", values.taxId);
+      await updateTenantSettings(tenantParam, "IDENTIDAD", "color_primario", formatColorForDb(values.primaryColor));
+      await updateTenantSettings(tenantParam, "INTEGRACIONES", "telegram_bot_token", values.telegramToken, true); // encrypted!
 
-      // Dynamically apply primary color change to DOM immediately for White Label testing
+      // 2. Parse channels and update local cache
+      const channels = parseToHslChannels(values.primaryColor);
+      const cacheKey = `tenant_config_${tenantParam || "default"}`;
+      localStorage.setItem(cacheKey, JSON.stringify({
+        name: values.companyName,
+        primaryColor: channels,
+        theme: tenantParam === "apex" ? "dark" : tenantParam === "acme" ? "light" : undefined
+      }));
+
+      // 3. Dynamically apply primary color change to DOM immediately for White Label testing
       const root = document.documentElement;
-      root.style.setProperty("--primary", values.primaryColor);
-      root.style.setProperty("--ring", values.primaryColor);
+      root.style.setProperty("--primary", channels);
+      root.style.setProperty("--ring", channels);
 
+      setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
-    }, 1200);
+    } catch (err: any) {
+      console.error("Error saving settings to Supabase:", err);
+      alert(`Error al guardar configuración: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted-foreground">Cargando configuración...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

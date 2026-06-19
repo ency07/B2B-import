@@ -4,6 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useSearchParams } from "next/navigation";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -20,6 +21,7 @@ import { ArrowUpDown, Search, ChevronLeft, ChevronRight, Briefcase, Plus, Sparkl
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -40,7 +42,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -53,6 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getJobs, createJob } from "@/app/actions";
 
 // Zod schema for job creation with date validations
 const jobSchema = z.object({
@@ -83,16 +85,15 @@ interface Job {
   status: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA" | "CANCELADA";
 }
 
-// Initial mock jobs
-const INITIAL_JOBS: Job[] = [
-  { id: "1", code: "JOB-2026-001", description: "Mantenimiento preventivo subestación eléctrica sur", assignedTech: "Ing. Carlos Mendoza", priority: "ALTA", startDate: "2026-06-20", endDate: "2026-06-22", status: "EN_PROGRESO" },
-  { id: "2", code: "JOB-2026-002", description: "Instalación de acometida y cableado estructurado racks", assignedTech: "Téc. Andrés Silva", priority: "MEDIA", startDate: "2026-06-21", endDate: "2026-06-25", status: "PENDIENTE" },
-  { id: "3", code: "JOB-2026-003", description: "Calibración de sensores de presión de líneas de vapor", assignedTech: "Ing. Carlos Mendoza", priority: "ALTA", startDate: "2026-06-15", endDate: "2026-06-16", status: "COMPLETADA" },
-  { id: "4", code: "JOB-2026-004", description: "Pintura y adecuación física bodegas de químicos", assignedTech: "Téc. Sofía Ramos", priority: "BAJA", startDate: "2026-06-25", endDate: "2026-06-28", status: "PENDIENTE" },
-];
-
 export default function JobsPage() {
-  const [jobs, setJobs] = React.useState<Job[]>(INITIAL_JOBS);
+  const searchParams = useSearchParams();
+  const tenantParam = searchParams.get("tenant");
+
+  const [jobs, setJobs] = React.useState<Job[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -108,21 +109,36 @@ export default function JobsPage() {
     },
   });
 
-  const onSubmit = (values: JobFormValues) => {
-    const nextCode = `JOB-2026-00${jobs.length + 1}`;
-    const newJob: Job = {
-      id: String(jobs.length + 1),
-      code: nextCode,
-      description: values.description,
-      assignedTech: values.assignedTech,
-      priority: values.priority as "BAJA" | "MEDIA" | "ALTA",
-      startDate: values.startDate,
-      endDate: values.endDate,
-      status: "PENDIENTE",
-    };
-    setJobs((prev) => [newJob, ...prev]);
-    setIsDialogOpen(false);
-    form.reset();
+  const loadJobs = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getJobs(tenantParam);
+      setJobs(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantParam]);
+
+  React.useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  const onSubmit = async (values: JobFormValues) => {
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      await createJob(tenantParam, values);
+      setIsDialogOpen(false);
+      form.reset();
+      await loadJobs();
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Ocurrió un error al registrar el trabajo.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const columns: ColumnDef<Job>[] = [
@@ -134,12 +150,12 @@ export default function JobsPage() {
     {
       accessorKey: "description",
       header: "Descripción del Trabajo",
-      cell: ({ row }) => <div className="max-w-xs md:max-w-md truncate font-medium">{row.getValue("description")}</div>,
+      cell: ({ row }) => <div className="max-w-xs md:max-w-md truncate font-medium text-foreground">{row.getValue("description")}</div>,
     },
     {
       accessorKey: "assignedTech",
       header: "Responsable",
-      cell: ({ row }) => <span className="text-sm">{row.getValue("assignedTech")}</span>,
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("assignedTech")}</span>,
     },
     {
       accessorKey: "priority",
@@ -200,38 +216,41 @@ export default function JobsPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
             <Sparkles className="w-3.5 h-3.5" /> Módulo de Operaciones
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
-            Órdenes de Trabajo (Jobs)
+            Trabajos y Órdenes de Trabajo (OT)
           </h1>
           <p className="text-sm text-muted-foreground">
-            Control de actividades, asignación de responsabilidades y monitoreo de plazos de entrega.
+            Planificación y seguimiento de bitácoras de ejecución de obras con validaciones automáticas.
           </p>
         </div>
 
-        {/* Dialog Modal */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Crear Orden de Trabajo
+            <Button className="flex items-center gap-2 cursor-pointer">
+              <Plus className="w-4 h-4" /> Nueva Orden de Trabajo
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Nueva Orden de Trabajo</DialogTitle>
+              <DialogTitle>Abrir Orden de Trabajo</DialogTitle>
               <DialogDescription>
-                Ingresa los detalles para la planificación e inicio del trabajo.
+                Registra los parámetros operativos para programar la obra.
               </DialogDescription>
             </DialogHeader>
 
+            {errorMsg && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                {errorMsg}
+              </div>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-                {/* Description */}
                 <FormField
                   control={form.control}
                   name="description"
@@ -239,30 +258,29 @@ export default function JobsPage() {
                     <FormItem>
                       <FormLabel>Descripción del Trabajo</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ej. Reparación de caldera principal..." {...field} />
+                        <Input placeholder="Ej. Calibración de Chillers" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Assigned Technician */}
                 <FormField
                   control={form.control}
                   name="assignedTech"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Responsable / Técnico</FormLabel>
+                      <FormLabel>Técnico Responsable</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecciona el responsable" />
+                            <SelectValue placeholder="Selecciona el técnico" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Ing. Carlos Mendoza">Ing. Carlos Mendoza</SelectItem>
-                          <SelectItem value="Téc. Andrés Silva">Téc. Andrés Silva</SelectItem>
-                          <SelectItem value="Téc. Sofía Ramos">Téc. Sofía Ramos</SelectItem>
+                          <SelectItem value="Ing. Carlos Mendoza">Ing. Carlos Mendoza (Ingeniería)</SelectItem>
+                          <SelectItem value="Téc. Andrés Silva">Téc. Andrés Silva (Operaciones)</SelectItem>
+                          <SelectItem value="Téc. Sofía Ramos">Téc. Sofía Ramos (Proyectos)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -270,7 +288,6 @@ export default function JobsPage() {
                   )}
                 />
 
-                {/* Priority */}
                 <FormField
                   control={form.control}
                   name="priority"
@@ -294,44 +311,42 @@ export default function JobsPage() {
                   )}
                 />
 
-                {/* Date Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Start Date */}
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha Inicio</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de Inicio Planificada</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* End Date */}
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha Fin</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de Finalización Planificada</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <DialogFooter className="pt-4 border-t border-border">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
                     Cancelar
                   </Button>
-                  <Button type="submit">Programar OT</Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? <Spinner size="sm" className="mr-2" /> : null}
+                    Crear OT
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>
@@ -339,7 +354,6 @@ export default function JobsPage() {
         </Dialog>
       </div>
 
-      {/* Filter and table */}
       <div className="space-y-4">
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -351,69 +365,77 @@ export default function JobsPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-border rounded-lg bg-zinc-950/20">
+            <Spinner size="lg" className="text-primary mb-2" />
+            <span className="text-xs text-muted-foreground">Cargando órdenes de trabajo...</span>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        No se encontraron órdenes de trabajo registradas.
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No hay trabajos programados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-8 w-8 p-0 cursor-pointer"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="h-8 w-8 p-0 cursor-pointer"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
