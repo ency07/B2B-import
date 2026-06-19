@@ -79,3 +79,29 @@ Historial oficial de reutilización del proyecto.
 *   **Porcentaje reutilizado**: 95% (maquetación local sobre primitivos).
 *   **Responsable**: Antigravity
 *   **Resultado**: Aprobado y registrado para su instalación.
+
+---
+
+### Registro 6: Librerías de Controles de Formulario (UI-06)
+*   **Fecha**: 2026-06-19
+*   **Repositorios**:
+    - `https://github.com/radix-ui/primitives` (`@radix-ui/react-checkbox`, `@radix-ui/react-select`, `@radix-ui/react-label`)
+*   **Módulo**: Formularios (Form Controls)
+*   **Qué se reutilizó**: Primitivos de casilla de selección, menús de selección de opción única y etiquetas con estándares de accesibilidad WAI-ARIA.
+*   **Qué se modificó**: Estilización local adaptada a las variables del sistema de diseño del ERP.
+*   **Porcentaje reutilizado**: 95% (maquetación local sobre primitivos Radix).
+*   **Responsable**: Antigravity
+*   **Resultado**: Aprobado y registrado para su instalación.
+
+---
+
+### Registro 7: Librerías de Visualización de Tablas (UI-07)
+*   **Fecha**: 2026-06-19
+*   **Repositorios**:
+    - `https://github.com/tanstack/table` (`@tanstack/react-table`)
+*   **Módulo**: Tablas (Table System)
+*   **Qué se reutilizó**: Motor lógico desacoplado de estilos (headless) para el control de ordenamiento, filtros, paginación y selección de filas de tablas.
+*   **Qué se modificó**: Integración local con componentes estéticos y estilos CSS de Tailwind en el ERP.
+*   **Porcentaje reutilizado**: 95% (lógica headless reutilizada, maquetación visual local).
+*   **Responsable**: Antigravity
+*   **Resultado**: Aprobado y registrado para su instalación.

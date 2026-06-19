@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  ClipboardList,
+  Table as TableIcon,
 } from "lucide-react";
 import { useLayout } from "./layout-context";
 import { cn } from "@/utils/cn";
@@ -24,6 +26,8 @@ const NAV_ITEMS = [
   { href: "/dashboard/jobs", label: "Trabajos", icon: Briefcase },
   { href: "/dashboard/inventory", label: "Inventario", icon: Package },
   { href: "/dashboard/invoices", label: "Facturación", icon: FileText },
+  { href: "/dashboard/form-demo", label: "Formulario Demo", icon: ClipboardList },
+  { href: "/dashboard/table-demo", label: "Tabla Demo", icon: TableIcon },
   { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
