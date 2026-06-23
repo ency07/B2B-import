@@ -111,6 +111,110 @@ INSERT INTO job_activities (id, tenant_id, job_id, activity_code, title, descrip
 ('a5100000-0000-0000-0000-000000000000', 'a0000000-0000-0000-0000-000000000000', 'a5000000-0000-0000-0000-000000000000', 'JOB-0001-01', 'Cimentación de Bases', 'Preparar bases metálicas y nivelación.', 'a9000000-0000-0000-0000-000000000000', 'PENDIENTE', '2026-07-01', '2026-07-05'),
 ('b5100000-0000-0000-0000-000000000000', 'b0000000-0000-0000-0000-000000000000', 'b5000000-0000-0000-0000-000000000000', 'JOB-0001-01', 'Limpieza e Inspección', 'Retiro de rejillas e inspección interna.', 'b9000000-0000-0000-0000-000000000000', 'COMPLETADA', '2026-06-20', '2026-06-22')
 ON CONFLICT (id) DO NOTHING;
+
+-- 13. Insertar Servicios Industriales (AeroMax Industrial)
+INSERT INTO company_services (id, tenant_id, service_code, name, description, icon_name) VALUES
+('a7c00000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000000', 'SRV-000001', 'Balanceo Estático', 'Añadir o remover pesos para corrección de vibraciones en rotores y ventiladores.', 'Activity'),
+('a7c00000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000000', 'SRV-000002', 'Mediciones Aerodinámicas', 'Determinación de caudales, presiones estáticas y curvas de rendimiento en sitio.', 'Gauge'),
+('a7c00000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000000', 'SRV-000003', 'Fabricación de Ventiladores', 'Fabricación y reconstrucción a medida de ventiladores axiales y centrífugos industriales.', 'Cpu'),
+('a7c00000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000000', 'SRV-000004', 'Sistemas de Extracción tipo Hongo', 'Diseño, construcción e instalación de sistemas de extracción e inyección de aire tipo hongo.', 'Wind'),
+
+('b7c00000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000000', 'SRV-000001', 'Balanceo Estático', 'Añadir o remover pesos para corrección de vibraciones en rotores y ventiladores.', 'Activity'),
+('b7c00000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000000', 'SRV-000002', 'Mediciones Aerodinámicas', 'Determinación de caudales, presiones estáticas y curvas de rendimiento en sitio.', 'Gauge'),
+('b7c00000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000000', 'SRV-000003', 'Fabricación de Ventiladores', 'Fabricación y reconstrucción a medida de ventiladores axiales y centrífugos industriales.', 'Cpu'),
+('b7c00000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000000', 'SRV-000004', 'Sistemas de Extracción tipo Hongo', 'Diseño, construcción e instalación de sistemas de extracción e inyección de aire tipo hongo.', 'Wind')
+ON CONFLICT (id) DO NOTHING;
+
+-- 14. Insertar Categoría
+INSERT INTO product_categories (id, tenant_id, category_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000000', 'CAT-000001', 'Sistemas de Aire', 'Sistemas completos de inyección y extracción de aire industrial.'),
+('b3c00000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000000', 'CAT-000001', 'Sistemas de Aire', 'Sistemas completos de inyección y extracción de aire industrial.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 15. Insertar Subcategorías
+INSERT INTO product_subcategories (id, tenant_id, category_id, subcategory_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000001', 'SBC-000001', 'Extractores e Inyectores', 'Equipos industriales de inyección y extracción de aire.'),
+('a3c00000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000001', 'SBC-000002', 'Ventiladores', 'Ventiladores industriales centrífugos y axiales.'),
+
+('b3c00000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000001', 'SBC-000001', 'Extractores e Inyectores', 'Equipos industriales de inyección y extracción de aire.'),
+('b3c00000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000001', 'SBC-000002', 'Ventiladores', 'Ventiladores industriales centrífugos y axiales.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 16. Insertar Familias
+INSERT INTO product_families (id, tenant_id, subcategory_id, family_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000002', 'FAM-000001', 'Extractores Industriales', 'Extractores industriales para alto caudal y ambientes severos.'),
+('a3c00000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000005', 'FAM-000002', 'Axiales y Centrífugos', 'Ventiladores de álabes curvados y axiales tubulares.'),
+
+('b3c00000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000002', 'FAM-000001', 'Extractores Industriales', 'Extractores industriales para alto caudal y ambientes severos.'),
+('b3c00000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000005', 'FAM-000002', 'Axiales y Centrífugos', 'Ventiladores de álabes curvados y axiales tubulares.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 17. Insertar Series
+INSERT INTO product_series (id, tenant_id, family_id, series_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000003', 'SER-000001', 'Serie Extracción Premium', 'Equipos industriales con recubrimientos epóxicos y motores de alta eficiencia.'),
+('a3c00000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000006', 'SER-000002', 'Serie Inyección Aerodinámica', 'Sistemas de álabes forjados y control acústico.'),
+
+('b3c00000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000003', 'SER-000001', 'Serie Extracción Premium', 'Equipos industriales con recubrimientos epóxicos y motores de alta eficiencia.'),
+('b3c00000-0000-0000-0000-000000000007', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000006', 'SER-000002', 'Serie Inyección Aerodinámica', 'Sistemas de álabes forjados y control acústico.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 18. Insertar los 8 Productos
+INSERT INTO products (id, tenant_id, series_id, product_code, name, description, status) VALUES
+-- Acme
+('a3c00000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000001', 'Blower', 'Extractor industrial centrífugo con álabes inclinados para presiones elevadas.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000002', 'Extractor Tipo Hongo Inox', 'Extractor para techos fabricado en acero inoxidable 304 ideal para intemperie.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000003', 'Extractor Multiusos', 'Equipo versátil para montaje en pared, ducto o cabinas de flujo estándar.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000004', 'Ventilador Axial', 'Ventilador de marco cuadrado para renovación masiva de aire en naves industriales.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000015', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000005', 'Ventilador Centrífugo', 'Ventilador de carcasa de acero reforzado con transmisión por bandas/poleas.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000016', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000006', 'Ventilador Encajonado', 'Gabinete acústico insonorizado con ventilador de doble oído incorporado.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000017', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000007', 'Ventilador Tubo Axial', 'Ventilador cilíndrico tubular para acople directo en sistemas de ductos.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000018', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000008', 'Ventilador Extractor Centrífugo Blower', 'Combo extractor tipo caracol con turbina balanceada dinámicamente.', 'ACTIVO'),
+-- Apex
+('b3c00000-0000-0000-0000-000000000011', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000001', 'Blower', 'Extractor industrial centrífugo con álabes inclinados para presiones elevadas.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000012', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000002', 'Extractor Tipo Hongo Inox', 'Extractor para techos fabricado en acero inoxidable 304 ideal para intemperie.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000013', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000003', 'Extractor Multiusos', 'Equipo versátil para montaje en pared, ducto o cabinas de flujo estándar.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000014', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000004', 'Ventilador Axial', 'Ventilador de marco cuadrado para renovación masiva de aire en naves industriales.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000015', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000005', 'Ventilador Centrífugo', 'Ventilador de carcasa de acero reforzado con transmisión por bandas/poleas.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000016', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000006', 'Ventilador Encajonado', 'Gabinete acústico insonorizado con ventilador de doble oído incorporado.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000017', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000007', 'Ventilador Tubo Axial', 'Ventilador cilíndrico tubular para acople directo en sistemas de ductos.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000018', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000008', 'Ventilador Extractor Centrífugo Blower', 'Combo extractor tipo caracol con turbina balanceada dinámicamente.', 'ACTIVO')
+ON CONFLICT (id) DO NOTHING;
+
+-- 19. Insertar Formulario del Wizard ( website_forms )
+INSERT INTO website_forms (id, tenant_id, form_code, name, form_type) VALUES
+('a3c00000-0000-0000-0000-000000000099', 'a0000000-0000-0000-0000-000000000000', 'FRM-000001', 'Wizard de Preingeniería', 'WIZARD'),
+('b3c00000-0000-0000-0000-000000000099', 'b0000000-0000-0000-0000-000000000000', 'FRM-000001', 'Wizard de Preingeniería', 'WIZARD')
+ON CONFLICT (id) DO NOTHING;
+
+-- 20. Insertar campos de formulario ( website_form_fields )
+INSERT INTO website_form_fields (tenant_id, form_id, field_key, field_name, field_type, is_required, sort_order, options, validation_rules) VALUES
+-- Acme
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'servicio', 'Tipo de Servicio', 'LIST', true, 10, '["fabricacion", "venta", "mantenimiento", "reparacion"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'length', 'Largo (metros)', 'NUMBER', true, 20, '[]', '{"min": 1, "max": 1000}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'width', 'Ancho (metros)', 'NUMBER', true, 30, '[]', '{"min": 1, "max": 1000}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'height', 'Alto (metros)', 'NUMBER', true, 40, '[]', '{"min": 1, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'environment', 'Ambiente Operativo', 'LIST', true, 50, '["heavy_plant", "data_center", "mining", "warehouse", "default"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'nombre', 'Nombre de Contacto', 'TEXT', true, 60, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'empresa', 'Razón Social', 'TEXT', true, 70, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'cargo', 'Cargo Profesional', 'LIST', true, 80, '["Director de Planta", "Gerente de Mantenimiento", "Supervisor de HVAC / Operaciones", "Ingeniero de Proyectos", "Compras / Abastecimiento", "Otro"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'telefono', 'Teléfono Corporativo', 'TEXT', true, 90, '[]', '{"regex": "^(\\\\+?57)?(3\\\\d{9}|60[1-8]\\\\d{7})$"}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'email', 'Correo Corporativo', 'TEXT', true, 100, '[]', '{"email": true}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'ciudad', 'Ciudad de la Planta', 'TEXT', true, 110, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'urgencia', 'Urgencia del Requerimiento', 'LIST', true, 120, '["baja", "media", "alta"]', '{}'),
+-- Apex
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'servicio', 'Tipo de Servicio', 'LIST', true, 10, '["fabricacion", "venta", "mantenimiento", "reparacion"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'length', 'Largo (metros)', 'NUMBER', true, 20, '[]', '{"min": 1, "max": 1000}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'width', 'Ancho (metros)', 'NUMBER', true, 30, '[]', '{"min": 1, "max": 1000}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'height', 'Alto (metros)', 'NUMBER', true, 40, '[]', '{"min": 1, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'environment', 'Ambiente Operativo', 'LIST', true, 50, '["heavy_plant", "data_center", "mining", "warehouse", "default"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'nombre', 'Nombre de Contacto', 'TEXT', true, 60, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'empresa', 'Razón Social', 'TEXT', true, 70, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'cargo', 'Cargo Profesional', 'LIST', true, 80, '["Director de Planta", "Gerente de Mantenimiento", "Supervisor de HVAC / Operaciones", "Ingeniero de Proyectos", "Compras / Abastecimiento", "Otro"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'telefono', 'Teléfono Corporativo', 'TEXT', true, 90, '[]', '{"regex": "^(\\\\+?57)?(3\\\\d{9}|60[1-8]\\\\d{7})$"}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'email', 'Correo Corporativo', 'TEXT', true, 100, '[]', '{"email": true}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'ciudad', 'Ciudad de la Planta', 'TEXT', true, 110, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'urgencia', 'Urgencia del Requerimiento', 'LIST', true, 120, '["baja", "media", "alta"]', '{}')
+ON CONFLICT (tenant_id, form_id, field_key) DO NOTHING;
 `;
 
     fs.writeFileSync(outputFile, combinedSql, 'utf8');

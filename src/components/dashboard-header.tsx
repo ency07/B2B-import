@@ -12,9 +12,9 @@ export function DashboardHeader() {
 
   return (
     <Headroom className="z-40">
-      <header className="flex items-center justify-between h-16 px-4 border-b border-border bg-background/80 backdrop-blur-md transition-colors duration-200">
-        {/* Left Side: Mobile Menu Button & Search Placeholder */}
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between h-16 px-6 border-b border-border bg-background/80 backdrop-blur-md transition-colors duration-200">
+        {/* Left Side: Mobile Menu Button & Technical status */}
+        <div className="flex items-center gap-4">
           <button
             onClick={toggleMobileOpen}
             className="p-2 -ml-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground lg:hidden cursor-pointer"
@@ -23,14 +23,16 @@ export function DashboardHeader() {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Search Bar (Responsive) */}
-          <div className="relative hidden sm:flex items-center w-64 md:w-80">
-            <Search className="absolute left-3 w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              className="w-full pl-9 pr-4 py-1.5 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-hidden focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-            />
+          {/* Technical Breadcrumbs & System Status (Siemens / Vercel style) */}
+          <div className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground select-none">
+            <span className="text-foreground font-bold">AeroMax</span>
+            <span>/</span>
+            <span>Dashboard</span>
+            <span className="opacity-25">|</span>
+            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-450 font-bold bg-emerald-500/5 px-2.5 py-0.5 rounded-full border border-emerald-500/10">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              <span>// DB_CONNECTED</span>
+            </div>
           </div>
         </div>
 

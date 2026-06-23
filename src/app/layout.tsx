@@ -62,9 +62,9 @@ export default function RootLayout({
                       if (tenant === 'apex') {
                         document.documentElement.classList.add('dark');
                         primary = '142 72% 29%';
-                      } else if (tenant === 'acme') {
-                        document.documentElement.classList.remove('dark');
-                        primary = '215 80% 50%';
+                      } else if (tenant === 'acme' || tenant === 'ventitech') {
+                        document.documentElement.classList.add('dark');
+                        primary = '199 89% 48%';
                       }
                       if (primary) {
                         document.documentElement.style.setProperty('--primary', primary);

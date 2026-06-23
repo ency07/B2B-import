@@ -6,14 +6,9 @@ import { LayoutProvider } from "@/components/layout-context";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { useTheme } from "next-themes";
-import { getTenantConfig, parseToHslChannels } from "@/utils/tenant";
-import { getTenantSettings } from "@/app/actions";
-
-interface ActiveConfig {
-  name: string;
-  primaryColor: string;
-  theme?: "light" | "dark";
-}
+import { parseToHslChannels } from "@/utils/tenant";
+import { BrandingConfig, getBrandingDefaults } from "@/utils/branding-defaults";
+import { getTenantBranding } from "@/app/actions/branding";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
@@ -21,21 +16,35 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
 
   // State to hold the active branding configuration
-  const [activeConfig, setActiveConfig] = React.useState<ActiveConfig | null>(null);
+  const [activeConfig, setActiveConfig] = React.useState<BrandingConfig | null>(null);
 
-  // 1. Load configuration from localStorage instantly (or fall back to static mock configs)
+  // 1. Load configuration from localStorage instantly (or fall back to defaults)
   React.useEffect(() => {
-    const fallback = getTenantConfig(tenantParam);
+    const defaults = getBrandingDefaults(tenantParam);
     const cacheKey = `tenant_config_${tenantParam || "default"}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       try {
-        setActiveConfig(JSON.parse(cached));
+        const cachedObj = JSON.parse(cached);
+        if (cachedObj.color_primario || cachedObj.nombre_comercial) {
+          setActiveConfig({ ...defaults, ...cachedObj });
+        } else if (cachedObj.primaryColor) {
+          // Compatibility with old format
+          setActiveConfig({
+            ...defaults,
+            nombre_comercial: cachedObj.name || defaults.nombre_comercial,
+            color_primario: cachedObj.primaryColor.includes(' ') 
+              ? `hsl(${cachedObj.primaryColor.replace(/\s+/g, ', ')})` 
+              : cachedObj.primaryColor,
+          });
+        } else {
+          setActiveConfig(defaults);
+        }
       } catch (e) {
-        setActiveConfig(fallback);
+        setActiveConfig(defaults);
       }
     } else {
-      setActiveConfig(fallback);
+      setActiveConfig(defaults);
     }
   }, [tenantParam]);
 
@@ -43,26 +52,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     async function syncSettings() {
       try {
-        const settings = await getTenantSettings(tenantParam);
-        const fallback = getTenantConfig(tenantParam);
-        
-        // If settings exist, parse the primary color and razon_social
-        const dbColor = settings.color_primario || fallback.primaryColor;
-        const channels = parseToHslChannels(dbColor);
-        
-        const syncedConfig: ActiveConfig = {
-          name: settings.razon_social || fallback.name,
-          primaryColor: channels,
-          theme: tenantParam === "apex" ? "dark" : tenantParam === "acme" ? "light" : undefined
-        };
-
+        const branding = await getTenantBranding(tenantParam);
         const cacheKey = `tenant_config_${tenantParam || "default"}`;
         const cachedStr = localStorage.getItem(cacheKey);
         
         // Update state and cache if different
-        if (JSON.stringify(syncedConfig) !== cachedStr) {
-          localStorage.setItem(cacheKey, JSON.stringify(syncedConfig));
-          setActiveConfig(syncedConfig);
+        if (JSON.stringify(branding) !== cachedStr) {
+          localStorage.setItem(cacheKey, JSON.stringify(branding));
+          setActiveConfig(branding);
         }
       } catch (err) {
         console.error("Error syncing branding settings from Supabase:", err);
@@ -75,7 +72,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!activeConfig) return;
     const root = document.documentElement;
-    const theme = activeConfig.theme;
+    
+    // Theme selection based on tenant
+    const theme = tenantParam === "apex" ? "dark" : (tenantParam === "acme" || tenantParam === "ventitech") ? "dark" : null;
 
     if (theme) {
       if (theme === "dark") {
@@ -83,8 +82,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       } else {
         root.classList.remove("dark");
       }
-      root.style.setProperty("--primary", activeConfig.primaryColor);
-      root.style.setProperty("--ring", activeConfig.primaryColor);
     } else {
       // Sync with global theme setting when default tenant
       if (resolvedTheme === "dark") {
@@ -92,21 +89,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       } else {
         root.classList.remove("dark");
       }
-      root.style.removeProperty("--primary");
-      root.style.removeProperty("--ring");
     }
-  }, [activeConfig, resolvedTheme]);
+  }, [activeConfig, resolvedTheme, tenantParam]);
 
   return (
     <LayoutProvider>
-      {/* Dynamic CSS override for White Label primary colors, only for specific tenants */}
-      {activeConfig && activeConfig.theme && (
+      {/* Google Fonts Dynamic Loading */}
+      {activeConfig && activeConfig.tipografia_principal && (
+        <link
+          rel="stylesheet"
+          href={`https://fonts.googleapis.com/css2?family=${activeConfig.tipografia_principal.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`}
+        />
+      )}
+
+      {/* Dynamic CSS override for White Label styling */}
+      {activeConfig && (
         <style
           dangerouslySetInnerHTML={{
             __html: `
               :root {
-                --primary: ${activeConfig.primaryColor} !important;
-                --ring: ${activeConfig.primaryColor} !important;
+                --primary: ${parseToHslChannels(activeConfig.color_primario)} !important;
+                --ring: ${parseToHslChannels(activeConfig.color_primario)} !important;
+                --secondary: ${parseToHslChannels(activeConfig.color_secundario)} !important;
+                --success: ${parseToHslChannels(activeConfig.color_exito)} !important;
+                --warning: ${parseToHslChannels(activeConfig.color_warning)} !important;
+                --destructive: ${parseToHslChannels(activeConfig.color_danger)} !important;
+                --info: ${parseToHslChannels(activeConfig.color_info)} !important;
+                --radius: ${activeConfig.border_radius === "ninguno" ? "0px" : activeConfig.border_radius === "sutil" ? "4px" : activeConfig.border_radius === "redondeado" ? "12px" : activeConfig.border_radius} !important;
+                --font-sans: '${activeConfig.tipografia_principal}', var(--font-sans) !important;
               }
             `,
           }}
@@ -125,6 +135,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     </LayoutProvider>
   );
 }
+
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -124,7 +124,7 @@ export async function getJobs(tenantCode?: string | null) {
     id: job.id,
     code: job.job_code,
     description: job.title,
-    assignedTech: tenantId === "b0000000-0000-0000-0000-000000000000" ? "Ing. Administrador Apex" : "Ing. Administrador Acme",
+    assignedTech: tenantId === "b0000000-0000-0000-0000-000000000000" ? "Ing. Administrador Apex" : "Ing. Administrador VentiTech",
     priority: (job.priority === "HIGH" ? "ALTA" : job.priority === "LOW" ? "BAJA" : "MEDIA") as "BAJA" | "MEDIA" | "ALTA",
     startDate: job.planned_start_date ? job.planned_start_date.substring(0, 10) : "",
     endDate: job.planned_end_date ? job.planned_end_date.substring(0, 10) : "",
@@ -218,7 +218,7 @@ export async function getInventoryStock(tenantCode?: string | null) {
       reserved_quantity,
       available_quantity,
       warehouses (id, name, warehouse_code),
-      inventory_items (id, name, item_code, category, sku, unit_type)
+      inventory_items (id, name, item_code, category, unit_type)
     `)
     .eq("tenant_id", tenantId);
 
@@ -233,7 +233,7 @@ export async function getInventoryStock(tenantCode?: string | null) {
     warehouseName: row.warehouses?.name || "",
     itemCode: row.inventory_items?.item_code || "",
     itemName: row.inventory_items?.name || "",
-    sku: row.inventory_items?.sku || "",
+    sku: row.inventory_items?.item_code || "",
     category: row.inventory_items?.category || "",
     unit: row.inventory_items?.unit_type || "Unidad",
     quantity: Number(row.quantity),
@@ -358,8 +358,8 @@ export async function getInvoices(tenantCode?: string | null) {
       paid_amount,
       balance_amount,
       status,
-      issue_date,
-      clients (name)
+      invoice_date,
+      clients ( legal_name )
     `)
     .eq("tenant_id", tenantId)
     .is("deleted_at", null)
@@ -373,11 +373,11 @@ export async function getInvoices(tenantCode?: string | null) {
   return (data || []).map((inv: any) => ({
     id: inv.id,
     code: inv.invoice_code,
-    clientName: inv.clients?.name || "Cliente General",
+    clientName: inv.clients?.legal_name || "Cliente General",
     totalAmount: Number(inv.total_amount),
     paidAmount: Number(inv.paid_amount || 0),
     status: inv.status as "BORRADOR" | "EMITIDA" | "PARCIALMENTE_PAGADA" | "PAGADA" | "ANULADA",
-    date: inv.issue_date ? inv.issue_date.substring(0, 10) : "",
+    date: inv.invoice_date ? inv.invoice_date.substring(0, 10) : "",
   }));
 }
 
@@ -387,12 +387,12 @@ export async function createInvoice(
 ) {
   const tenantId = await getTenantId(tenantCode);
 
-  // Get client matching the name or pick the first client
+  // Get client matching the legal_name or pick the first client
   let { data: client } = await supabaseAdmin
     .from("clients")
     .select("id")
     .eq("tenant_id", tenantId)
-    .eq("name", invoiceData.clientName)
+    .eq("legal_name", invoiceData.clientName)
     .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
@@ -428,7 +428,7 @@ export async function createInvoice(
       tenant_id: tenantId,
       invoice_code: code,
       client_id: client?.id || "a3000000-0000-0000-0000-000000000000",
-      issue_date: new Date().toISOString(),
+      invoice_date: new Date().toISOString().substring(0, 10),
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days default
       subtotal_amount: invoiceData.amount,
       tax_amount: 0,

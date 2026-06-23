@@ -35,7 +35,21 @@ async function main() {
 
     console.log('Ejecutando script de migración consolidado... (esto puede tardar unos segundos)');
     await client.query(sql);
-    console.log('¡Migraciones y datos semilla aplicados exitosamente en Supabase!');
+    console.log('¡Migraciones y datos semilla aplicados exitosamente!');
+
+    console.log('Restaurando permisos de los roles de Supabase API (anon, authenticated, service_role)...');
+    const grantQuery = `
+      GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+      GRANT ALL ON SCHEMA public TO postgres, service_role;
+      GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+      GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+      GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
+    `;
+    await client.query(grantQuery);
+    console.log('¡Permisos y privilegios de Supabase restaurados exitosamente en Supabase!');
   } catch (error) {
     console.error('Error al aplicar las migraciones:', error);
     process.exit(1);

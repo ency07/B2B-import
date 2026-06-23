@@ -126,9 +126,9 @@ export default function LoginPage() {
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => router.push("/login?tenant=acme")}
-            className="px-2 py-1.5 rounded-md text-[10px] font-semibold border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 text-blue-500 text-center cursor-pointer transition-all"
+            className="px-2 py-1.5 rounded-md text-[10px] font-semibold border border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10 text-sky-400 text-center cursor-pointer transition-all"
           >
-            Acme Corp (Azul)
+            VentiTech (Celeste)
           </button>
           <button
             onClick={() => router.push("/login?tenant=apex")}

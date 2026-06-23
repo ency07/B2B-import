@@ -32,8 +32,8 @@ import {
 const MOCK_CLIENTS: Client[] = [
   {
     id: "1",
-    taxId: "ACM901201TR4",
-    name: "Acme Industrial S.A. de C.V.",
+    taxId: "901201764-3",
+    name: "VentiTech S.A.S.",
     segment: "Industrial",
     totalInvoiced: 450200.5,
     status: "ACTIVO",

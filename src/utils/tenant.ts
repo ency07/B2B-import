@@ -6,9 +6,14 @@ export interface TenantConfig {
 
 export const MOCK_TENANTS: Record<string, TenantConfig> = {
   acme: {
-    name: "Acme Corporativo",
-    primaryColor: "215 80% 50%", // Vibrant Blue
-    theme: "light",
+    name: "VentiTech OS",
+    primaryColor: "199 89% 48%", // Sky Blue (VentiTech)
+    theme: "dark", // VentiTech uses sophisticated dark theme as primary
+  },
+  ventitech: {
+    name: "VentiTech OS",
+    primaryColor: "199 89% 48%", // Sky Blue (VentiTech)
+    theme: "dark",
   },
   apex: {
     name: "Apex Logística B2B",

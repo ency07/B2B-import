@@ -1,6 +1,6 @@
 -- ==================================================
 -- BASE DE DATOS COMPLETA: ERP B2B PREMIUM
--- Generado: 2026-06-19T15:20:31.031Z
+-- Generado: 2026-06-20T02:39:48.124Z
 -- ==================================================
 
 -- --------------------------------------------------
@@ -9200,6 +9200,619 @@ CREATE TRIGGER trg_block_automation_rules_delete
     FOR EACH ROW EXECUTE FUNCTION block_physical_settings_delete();
 
 
+-- --------------------------------------------------
+-- MIGRACIÓN: 20260617000035_industrial_cms.sql
+-- --------------------------------------------------
+-- MIGRACIÓN FASE 35: CMS INDUSTRIAL, CATÁLOGO Y CONFIGURADOR INTERACTIVO
+-- Archivo: supabase/migrations/20260617000035_industrial_cms.sql
+
+-- ============================================================
+-- 1. TRADUCCIÓN DE ESTADOS DE RIESGO DE LEADS A ESPAÑOL
+-- ============================================================
+-- Eliminar la restricción de validación original en inglés
+ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_risk_level_check;
+
+-- Actualizar filas existentes si hubiere (por consistencia)
+UPDATE leads SET risk_level = 'FRIO' WHERE risk_level IN ('LOW', 'WARM', 'HOT');
+
+-- Cambiar el default a español
+ALTER TABLE leads ALTER COLUMN risk_level SET DEFAULT 'FRIO';
+
+-- Agregar la nueva restricción con los términos en español
+ALTER TABLE leads ADD CONSTRAINT check_risk_level CHECK (risk_level IN ('CALIENTE', 'TIBIO', 'FRIO', 'SPAM'));
+
+-- ============================================================
+-- 2. JERARQUÍA DE CATÁLOGO INDUSTRIAL DE PRODUCTOS
+-- ============================================================
+
+-- A. Subcategorías (product_subcategories)
+CREATE TABLE product_subcategories (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    category_id uuid NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT,
+    subcategory_code varchar(50) NOT NULL,
+    name varchar(150) NOT NULL,
+    description text,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_subcategory_code UNIQUE (tenant_id, subcategory_code)
+);
+
+-- Alterar Familias de Productos para apuntar a Subcategorías
+ALTER TABLE product_families ADD COLUMN subcategory_id uuid REFERENCES product_subcategories(id) ON DELETE RESTRICT;
+ALTER TABLE product_families ALTER COLUMN category_id DROP NOT NULL;
+
+-- B. Series de Productos (product_series)
+CREATE TABLE product_series (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    family_id uuid NOT NULL REFERENCES product_families(id) ON DELETE RESTRICT,
+    series_code varchar(50) NOT NULL,
+    name varchar(150) NOT NULL,
+    description text,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_series_code UNIQUE (tenant_id, series_code)
+);
+
+-- Alterar Productos para apuntar a Series en lugar de Familias
+ALTER TABLE products ADD COLUMN series_id uuid REFERENCES product_series(id) ON DELETE RESTRICT;
+ALTER TABLE products ALTER COLUMN family_id DROP NOT NULL;
+
+-- ============================================================
+-- 3. MEDIA MANAGER (GESTOR CENTRALIZADO DE MULTIMEDIA Y ARCHIVOS)
+-- ============================================================
+
+-- C. Media Assets (media_assets)
+CREATE TABLE media_assets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    file_name varchar(250) NOT NULL,
+    file_path varchar(500) NOT NULL,
+    file_size integer NOT NULL,
+    mime_type varchar(100) NOT NULL,
+    alt_text varchar(250),
+    usage_count integer NOT NULL DEFAULT 0,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_file_path UNIQUE (tenant_id, file_path)
+);
+
+-- D. Relación de Imágenes de Productos (product_images)
+CREATE TABLE product_images (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    media_asset_id uuid NOT NULL REFERENCES media_assets(id) ON DELETE RESTRICT,
+    sort_order integer NOT NULL DEFAULT 0,
+    is_cover boolean NOT NULL DEFAULT false,
+    image_type varchar(50) NOT NULL DEFAULT 'FOTO' CHECK (image_type IN ('FOTO', 'RENDER', 'PLANO')),
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text
+);
+
+-- E. Relación de Documentos Técnicos (product_documents)
+CREATE TABLE product_documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    media_asset_id uuid NOT NULL REFERENCES media_assets(id) ON DELETE RESTRICT,
+    document_type varchar(50) NOT NULL DEFAULT 'FICHA_TECNICA' CHECK (document_type IN ('FICHA_TECNICA', 'MANUAL', 'CERTIFICADO', 'CATALOGO')),
+    language varchar(10) NOT NULL DEFAULT 'es',
+    version varchar(20) NOT NULL DEFAULT '1.0',
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text
+);
+
+-- F. Relación de Archivos de Ingeniería y CAD (product_files)
+CREATE TABLE product_files (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    media_asset_id uuid NOT NULL REFERENCES media_assets(id) ON DELETE RESTRICT,
+    file_type varchar(50) NOT NULL DEFAULT 'CAD' CHECK (file_type IN ('CAD', 'DWG', 'DXF', 'STEP', 'IGES')),
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text
+);
+
+-- G. Relación de Videos de Productos (product_videos)
+CREATE TABLE product_videos (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    video_url varchar(500) NOT NULL,
+    video_type varchar(50) NOT NULL DEFAULT 'YOUTUBE' CHECK (video_type IN ('YOUTUBE', 'VIMEO', 'STORAGE')),
+    sort_order integer NOT NULL DEFAULT 0,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text
+);
+
+-- ============================================================
+-- 4. SEO MANAGER (GESTOR CENTRALIZADO DE METADATOS)
+-- ============================================================
+
+-- H. Tabla de Metadatos SEO (seo_metadata)
+CREATE TABLE seo_metadata (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    entity_type varchar(50) NOT NULL CHECK (entity_type IN ('PAGE', 'PRODUCT')),
+    entity_id uuid NOT NULL,
+    slug varchar(250) NOT NULL,
+    meta_title varchar(250),
+    meta_description text,
+    meta_keywords varchar(250),
+    canonical_url varchar(250),
+    og_title varchar(250),
+    og_description text,
+    og_image_url varchar(500),
+    robots_directives varchar(100) DEFAULT 'index, follow',
+    schema_markup jsonb DEFAULT '{}'::jsonb,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_entity_seo UNIQUE (tenant_id, entity_type, entity_id),
+    CONSTRAINT unique_tenant_slug UNIQUE (tenant_id, slug)
+);
+
+-- ============================================================
+-- 5. FORM BUILDER (CONFIGURADOR DINÁMICO DE FORMULARIOS)
+-- ============================================================
+
+-- I. Campos de Formularios de Captación (website_form_fields)
+CREATE TABLE website_form_fields (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    form_id uuid NOT NULL REFERENCES website_forms(id) ON DELETE CASCADE,
+    field_key varchar(50) NOT NULL,
+    field_name varchar(150) NOT NULL,
+    field_type varchar(50) NOT NULL CHECK (field_type IN ('TEXT', 'NUMBER', 'DATE', 'LIST', 'FILE', 'BOOLEAN')),
+    is_required boolean NOT NULL DEFAULT false,
+    sort_order integer NOT NULL DEFAULT 0,
+    options jsonb DEFAULT '[]'::jsonb,
+    validation_rules jsonb DEFAULT '{}'::jsonb,
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_form_field UNIQUE (tenant_id, form_id, field_key)
+);
+
+-- ============================================================
+-- 6. SERVICIOS CORPORATIVOS
+-- ============================================================
+
+-- J. Servicios de la Compañía (company_services)
+CREATE TABLE company_services (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
+    service_code varchar(50) NOT NULL,
+    name varchar(150) NOT NULL,
+    description text NOT NULL,
+    icon_name varchar(50),
+
+    -- Trazabilidad y Soft Delete
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    updated_at timestamp,
+    updated_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at timestamp,
+    deleted_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    delete_reason text,
+
+    CONSTRAINT unique_tenant_service_code UNIQUE (tenant_id, service_code)
+);
+
+-- ============================================================
+-- 7. ÍNDICES DE RENDIMIENTO Y HARDENING
+-- ============================================================
+CREATE INDEX idx_product_subcategories_cat ON product_subcategories(category_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_families_subcat ON product_families(subcategory_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_series_fam ON product_series(family_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_products_series ON products(series_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_media_assets_tenant ON media_assets(tenant_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_images_prod ON product_images(product_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_documents_prod ON product_documents(product_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_files_prod ON product_files(product_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_product_videos_prod ON product_videos(product_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_seo_metadata_entity ON seo_metadata(tenant_id, entity_type, entity_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_seo_metadata_slug ON seo_metadata(tenant_id, slug) WHERE deleted_at IS NULL;
+CREATE INDEX idx_website_form_fields_form ON website_form_fields(form_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_company_services_tenant ON company_services(tenant_id) WHERE deleted_at IS NULL;
+
+-- ============================================================
+-- 8. TRIGGERS: SECUENCIAS CORRELATIVAS AUTOMÁTICAS
+-- ============================================================
+CREATE OR REPLACE FUNCTION handle_cms_sequences()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_TABLE_NAME = 'product_subcategories' THEN
+        IF NEW.subcategory_code IS NULL OR NEW.subcategory_code = '' THEN
+            NEW.subcategory_code := 'SBC-' || LPAD(get_next_tenant_sequence(NEW.tenant_id, 'PRODUCT_SUBCATEGORY')::text, 6, '0');
+        END IF;
+    ELSIF TG_TABLE_NAME = 'product_series' THEN
+        IF NEW.series_code IS NULL OR NEW.series_code = '' THEN
+            NEW.series_code := 'SER-' || LPAD(get_next_tenant_sequence(NEW.tenant_id, 'PRODUCT_SERIES')::text, 6, '0');
+        END IF;
+    ELSIF TG_TABLE_NAME = 'media_assets' THEN
+        -- No requiere código secuencial público, se maneja por UUID y path
+    ELSIF TG_TABLE_NAME = 'company_services' THEN
+        IF NEW.service_code IS NULL OR NEW.service_code = '' THEN
+            NEW.service_code := 'SRV-' || LPAD(get_next_tenant_sequence(NEW.tenant_id, 'COMPANY_SERVICE')::text, 6, '0');
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_handle_subcat_code BEFORE INSERT ON product_subcategories FOR EACH ROW EXECUTE FUNCTION handle_cms_sequences();
+CREATE TRIGGER trg_handle_series_code BEFORE INSERT ON product_series FOR EACH ROW EXECUTE FUNCTION handle_cms_sequences();
+CREATE TRIGGER trg_handle_company_service_code BEFORE INSERT ON company_services FOR EACH ROW EXECUTE FUNCTION handle_cms_sequences();
+
+-- ============================================================
+-- 9. TRIGGERS: PREVENCIÓN DE BORRADO FÍSICO (SOFT-DELETE)
+-- ============================================================
+CREATE TRIGGER trg_block_subcat_delete BEFORE DELETE ON product_subcategories FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_series_delete BEFORE DELETE ON product_series FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_media_delete BEFORE DELETE ON media_assets FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_prod_img_delete BEFORE DELETE ON product_images FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_prod_doc_delete BEFORE DELETE ON product_documents FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_prod_file_delete BEFORE DELETE ON product_files FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_prod_vid_delete BEFORE DELETE ON product_videos FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_seo_delete BEFORE DELETE ON seo_metadata FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_form_field_delete BEFORE DELETE ON website_form_fields FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+CREATE TRIGGER trg_block_company_service_delete BEFORE DELETE ON company_services FOR EACH ROW EXECUTE FUNCTION block_physical_website_delete();
+
+-- ============================================================
+-- 10. TRIGGERS: TRAZABILIDAD Y AUDITORÍA GENERAL
+-- ============================================================
+CREATE TRIGGER trg_subcat_traceability BEFORE INSERT OR UPDATE ON product_subcategories FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_series_traceability BEFORE INSERT OR UPDATE ON product_series FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_media_traceability BEFORE INSERT OR UPDATE ON media_assets FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_prod_img_traceability BEFORE INSERT OR UPDATE ON product_images FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_prod_doc_traceability BEFORE INSERT OR UPDATE ON product_documents FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_prod_file_traceability BEFORE INSERT OR UPDATE ON product_files FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_prod_vid_traceability BEFORE INSERT OR UPDATE ON product_videos FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_seo_traceability BEFORE INSERT OR UPDATE ON seo_metadata FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_form_field_traceability BEFORE INSERT OR UPDATE ON website_form_fields FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+CREATE TRIGGER trg_company_service_traceability BEFORE INSERT OR UPDATE ON company_services FOR EACH ROW EXECUTE FUNCTION handle_approval_traceability();
+
+CREATE TRIGGER audit_product_subcategories AFTER INSERT OR UPDATE OR DELETE ON product_subcategories FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_product_series AFTER INSERT OR UPDATE OR DELETE ON product_series FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_media_assets AFTER INSERT OR UPDATE OR DELETE ON media_assets FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_product_images AFTER INSERT OR UPDATE OR DELETE ON product_images FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_product_documents AFTER INSERT OR UPDATE OR DELETE ON product_documents FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_product_files AFTER INSERT OR UPDATE OR DELETE ON product_files FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_product_videos AFTER INSERT OR UPDATE OR DELETE ON product_videos FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_seo_metadata AFTER INSERT OR UPDATE OR DELETE ON seo_metadata FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_website_form_fields AFTER INSERT OR UPDATE OR DELETE ON website_form_fields FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+CREATE TRIGGER audit_company_services AFTER INSERT OR UPDATE OR DELETE ON company_services FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+
+-- ============================================================
+-- 11. HABILITAR ROW LEVEL SECURITY (RLS)
+-- ============================================================
+ALTER TABLE product_subcategories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_series ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seo_metadata ENABLE ROW LEVEL SECURITY;
+ALTER TABLE website_form_fields ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company_services ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- 12. POLÍTICAS RLS (AISLAMIENTO MULTI-TENANT POR tenant_id)
+-- ============================================================
+
+-- Subcategorías
+CREATE POLICY subcat_select_tenant ON product_subcategories FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY subcat_write_tenant ON product_subcategories FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Series
+CREATE POLICY series_select_tenant ON product_series FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY series_write_tenant ON product_series FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Media Assets
+CREATE POLICY media_select_tenant ON media_assets FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY media_write_tenant ON media_assets FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Imágenes de Productos
+CREATE POLICY prod_img_select_tenant ON product_images FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY prod_img_write_tenant ON product_images FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Documentos de Productos
+CREATE POLICY prod_doc_select_tenant ON product_documents FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY prod_doc_write_tenant ON product_documents FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Archivos CAD de Productos
+CREATE POLICY prod_file_select_tenant ON product_files FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY prod_file_write_tenant ON product_files FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Videos de Productos
+CREATE POLICY prod_vid_select_tenant ON product_videos FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY prod_vid_write_tenant ON product_videos FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- SEO Metadata
+CREATE POLICY seo_select_tenant ON seo_metadata FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY seo_write_tenant ON seo_metadata FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Campos de Formularios
+CREATE POLICY form_fields_select_tenant ON website_form_fields FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY form_fields_write_tenant ON website_form_fields FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- Servicios
+CREATE POLICY company_services_select_tenant ON company_services FOR SELECT TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1) AND deleted_at IS NULL
+);
+CREATE POLICY company_services_write_tenant ON company_services FOR ALL TO authenticated USING (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+) WITH CHECK (
+    tenant_id = (SELECT tenant_id FROM users WHERE auth_user_id = auth.uid() LIMIT 1)
+);
+
+-- ============================================================
+-- 13. BYPASS PARA POSTGRES SUPER ADMIN EN MIGRACIONES Y SEED
+-- ============================================================
+CREATE POLICY subcat_super_admin ON product_subcategories FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY series_super_admin ON product_series FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY media_super_admin ON media_assets FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY prod_img_super_admin ON product_images FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY prod_doc_super_admin ON product_documents FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY prod_file_super_admin ON product_files FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY prod_vid_super_admin ON product_videos FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY seo_super_admin ON seo_metadata FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY form_fields_super_admin ON website_form_fields FOR ALL TO authenticated USING (is_platform_super_admin());
+CREATE POLICY company_services_super_admin ON company_services FOR ALL TO authenticated USING (is_platform_super_admin());
+
+
+-- --------------------------------------------------
+-- MIGRACIÓN: 20260619000036_fix_leads_schema.sql
+-- --------------------------------------------------
+-- MIGRACIÓN FASE 36: ALINEACIÓN SCHEMA LEADS CON FLUJO B2B WIZARD
+-- Archivo: supabase/migrations/20260619000036_fix_leads_schema.sql
+--
+-- Propósito: Alinear la tabla `leads` con el flujo público del Wizard y los Server Actions.
+-- La tabla original tenía columnas de captura directa (name, company_name, etc.).
+-- El nuevo flujo B2B registra primero clients/client_contacts y luego crea el lead
+-- vinculado mediante client_id + contact_id, con scoring dinámico.
+-- ===================================================================
+
+-- ============================================================
+-- 1. AGREGAR COLUMNAS FALTANTES AL SCHEMA MODERNO DE LEADS
+-- ============================================================
+
+-- Columna de score numérico (reemplaza a lead_score para consistencia)
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS score integer NOT NULL DEFAULT 0;
+
+-- Fuente de captación del lead
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS lead_source varchar(100);
+
+-- Estado del lead en el pipeline comercial
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS status varchar(50) NOT NULL DEFAULT 'NUEVO'
+    CHECK (status IN ('NUEVO', 'EN_SEGUIMIENTO', 'CALIFICADO', 'RECHAZADO', 'CONVERTIDO'));
+
+-- Ejecutivo Comercial asignado para seguimiento
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS assigned_user_id uuid REFERENCES users(id) ON DELETE SET NULL;
+
+-- Notas del sistema o del ejecutivo comercial
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS notes text;
+
+-- ============================================================
+-- 2. HACER NULLABLE LAS COLUMNAS HEREDADAS (NO APLICAN AL NUEVO FLUJO)
+-- El nuevo flujo guarda la info de contacto en client_contacts,
+-- por lo que estas columnas del schema viejo pueden quedar nulas.
+-- ============================================================
+ALTER TABLE leads ALTER COLUMN name DROP NOT NULL;
+ALTER TABLE leads ALTER COLUMN company_name DROP NOT NULL;
+ALTER TABLE leads ALTER COLUMN email DROP NOT NULL;
+
+-- ============================================================
+-- 3. ÍNDICES DE RENDIMIENTO PARA LAS NUEVAS COLUMNAS
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+CREATE INDEX IF NOT EXISTS idx_leads_risk_level ON leads(risk_level);
+CREATE INDEX IF NOT EXISTS idx_leads_assigned_user ON leads(assigned_user_id);
+CREATE INDEX IF NOT EXISTS idx_leads_lead_source ON leads(lead_source);
+
+-- ============================================================
+-- 4. POLÍTICA RLS: PERMITIR INSERTS DESDE EL WIZARD PÚBLICO
+-- El Server Action usa supabaseAdmin (service_role) por lo que
+-- salta el RLS. Esta política extra es de defensa en profundidad
+-- para posibles llamadas desde el cliente via anon.
+-- ============================================================
+
+-- Permitir a usuarios autenticados del tenant ver sus leads
+-- (Ya existe leads_all_tenant en Fase 11 — sólo agregamos la que faltaba para service_role)
+-- El service_role ya saltea RLS nativamente en Supabase, sin necesidad de políticas adicionales.
+
+-- ============================================================
+-- 5. ACTUALIZAR DEFAULT DE LEAD_CODE (ya manejado por trigger existente)
+-- ============================================================
+-- Sin cambios necesarios, el trigger handle_website_sequences ya genera LED-XXXXXX
+
+-- ============================================================
+-- 6. GRANTS PARA PostgREST (por si el schema se recreó)
+-- ============================================================
+GRANT ALL ON leads TO service_role;
+GRANT SELECT, INSERT, UPDATE ON leads TO authenticated;
+GRANT ALL ON diagnostic_reports TO service_role;
+GRANT SELECT ON diagnostic_reports TO authenticated;
+GRANT ALL ON clients TO service_role;
+GRANT SELECT, INSERT, UPDATE ON clients TO authenticated;
+GRANT ALL ON client_contacts TO service_role;
+GRANT SELECT, INSERT, UPDATE ON client_contacts TO authenticated;
+
+
+-- --------------------------------------------------
+-- MIGRACIÓN: 20260620000037_branding_version.sql
+-- --------------------------------------------------
+--
+-- FASE 32: Historial de Versiones de Branding (tenant_branding_version)
+--
+
+CREATE TABLE tenant_branding_version (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    version_number integer NOT NULL,
+    
+    -- Snapshot JSONB con todas las configuraciones de branding activas en este punto
+    config_values jsonb NOT NULL,
+    description varchar(255),
+    
+    created_at timestamp NOT NULL DEFAULT NOW(),
+    created_by uuid REFERENCES users(id) ON DELETE SET NULL,
+    
+    UNIQUE (tenant_id, version_number)
+);
+
+COMMENT ON TABLE tenant_branding_version IS 'Tabla para almacenar snapshots del historial de configuraciones de marca por tenant.';
+
+-- Habilitar Row Level Security (RLS)
+ALTER TABLE tenant_branding_version ENABLE ROW LEVEL SECURITY;
+
+-- Super Admin: acceso total
+CREATE POLICY tenant_branding_version_super_admin ON tenant_branding_version
+    FOR ALL
+    USING (is_platform_super_admin());
+
+-- Lectura: cualquier usuario del tenant
+CREATE POLICY tenant_branding_version_read ON tenant_branding_version
+    FOR SELECT
+    USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+
+-- Escritura: solo administradores/gerentes del tenant
+CREATE POLICY tenant_branding_version_write ON tenant_branding_version
+    FOR ALL
+    USING (
+        tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
+        AND (auth.jwt() ->> 'role') IN ('ADMINISTRADOR_TENANT', 'GERENTE', 'GERENTE_GENERAL')
+    );
+
+-- Índices para optimización
+CREATE INDEX idx_tenant_branding_version_tenant
+    ON tenant_branding_version(tenant_id, version_number);
+
+
 -- ==================================================
 -- DATOS DE SEMILLA PARA DEMOSTRACIÓN (ACME Y APEX)
 -- ==================================================
@@ -9282,3 +9895,107 @@ INSERT INTO job_activities (id, tenant_id, job_id, activity_code, title, descrip
 ('a5100000-0000-0000-0000-000000000000', 'a0000000-0000-0000-0000-000000000000', 'a5000000-0000-0000-0000-000000000000', 'JOB-0001-01', 'Cimentación de Bases', 'Preparar bases metálicas y nivelación.', 'a9000000-0000-0000-0000-000000000000', 'PENDIENTE', '2026-07-01', '2026-07-05'),
 ('b5100000-0000-0000-0000-000000000000', 'b0000000-0000-0000-0000-000000000000', 'b5000000-0000-0000-0000-000000000000', 'JOB-0001-01', 'Limpieza e Inspección', 'Retiro de rejillas e inspección interna.', 'b9000000-0000-0000-0000-000000000000', 'COMPLETADA', '2026-06-20', '2026-06-22')
 ON CONFLICT (id) DO NOTHING;
+
+-- 13. Insertar Servicios Industriales (AeroMax Industrial)
+INSERT INTO company_services (id, tenant_id, service_code, name, description, icon_name) VALUES
+('a7c00000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000000', 'SRV-000001', 'Balanceo Estático', 'Añadir o remover pesos para corrección de vibraciones en rotores y ventiladores.', 'Activity'),
+('a7c00000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000000', 'SRV-000002', 'Mediciones Aerodinámicas', 'Determinación de caudales, presiones estáticas y curvas de rendimiento en sitio.', 'Gauge'),
+('a7c00000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000000', 'SRV-000003', 'Fabricación de Ventiladores', 'Fabricación y reconstrucción a medida de ventiladores axiales y centrífugos industriales.', 'Cpu'),
+('a7c00000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000000', 'SRV-000004', 'Sistemas de Extracción tipo Hongo', 'Diseño, construcción e instalación de sistemas de extracción e inyección de aire tipo hongo.', 'Wind'),
+
+('b7c00000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000000', 'SRV-000001', 'Balanceo Estático', 'Añadir o remover pesos para corrección de vibraciones en rotores y ventiladores.', 'Activity'),
+('b7c00000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000000', 'SRV-000002', 'Mediciones Aerodinámicas', 'Determinación de caudales, presiones estáticas y curvas de rendimiento en sitio.', 'Gauge'),
+('b7c00000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000000', 'SRV-000003', 'Fabricación de Ventiladores', 'Fabricación y reconstrucción a medida de ventiladores axiales y centrífugos industriales.', 'Cpu'),
+('b7c00000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000000', 'SRV-000004', 'Sistemas de Extracción tipo Hongo', 'Diseño, construcción e instalación de sistemas de extracción e inyección de aire tipo hongo.', 'Wind')
+ON CONFLICT (id) DO NOTHING;
+
+-- 14. Insertar Categoría
+INSERT INTO product_categories (id, tenant_id, category_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000000', 'CAT-000001', 'Sistemas de Aire', 'Sistemas completos de inyección y extracción de aire industrial.'),
+('b3c00000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000000', 'CAT-000001', 'Sistemas de Aire', 'Sistemas completos de inyección y extracción de aire industrial.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 15. Insertar Subcategorías
+INSERT INTO product_subcategories (id, tenant_id, category_id, subcategory_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000001', 'SBC-000001', 'Extractores e Inyectores', 'Equipos industriales de inyección y extracción de aire.'),
+('a3c00000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000001', 'SBC-000002', 'Ventiladores', 'Ventiladores industriales centrífugos y axiales.'),
+
+('b3c00000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000001', 'SBC-000001', 'Extractores e Inyectores', 'Equipos industriales de inyección y extracción de aire.'),
+('b3c00000-0000-0000-0000-000000000005', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000001', 'SBC-000002', 'Ventiladores', 'Ventiladores industriales centrífugos y axiales.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 16. Insertar Familias
+INSERT INTO product_families (id, tenant_id, subcategory_id, family_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000002', 'FAM-000001', 'Extractores Industriales', 'Extractores industriales para alto caudal y ambientes severos.'),
+('a3c00000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000005', 'FAM-000002', 'Axiales y Centrífugos', 'Ventiladores de álabes curvados y axiales tubulares.'),
+
+('b3c00000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000002', 'FAM-000001', 'Extractores Industriales', 'Extractores industriales para alto caudal y ambientes severos.'),
+('b3c00000-0000-0000-0000-000000000006', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000005', 'FAM-000002', 'Axiales y Centrífugos', 'Ventiladores de álabes curvados y axiales tubulares.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 17. Insertar Series
+INSERT INTO product_series (id, tenant_id, family_id, series_code, name, description) VALUES
+('a3c00000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000003', 'SER-000001', 'Serie Extracción Premium', 'Equipos industriales con recubrimientos epóxicos y motores de alta eficiencia.'),
+('a3c00000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000006', 'SER-000002', 'Serie Inyección Aerodinámica', 'Sistemas de álabes forjados y control acústico.'),
+
+('b3c00000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000003', 'SER-000001', 'Serie Extracción Premium', 'Equipos industriales con recubrimientos epóxicos y motores de alta eficiencia.'),
+('b3c00000-0000-0000-0000-000000000007', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000006', 'SER-000002', 'Serie Inyección Aerodinámica', 'Sistemas de álabes forjados y control acústico.')
+ON CONFLICT (id) DO NOTHING;
+
+-- 18. Insertar los 8 Productos
+INSERT INTO products (id, tenant_id, series_id, product_code, name, description, status) VALUES
+-- Acme
+('a3c00000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000001', 'Blower', 'Extractor industrial centrífugo con álabes inclinados para presiones elevadas.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000002', 'Extractor Tipo Hongo Inox', 'Extractor para techos fabricado en acero inoxidable 304 ideal para intemperie.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000004', 'PRO-000003', 'Extractor Multiusos', 'Equipo versátil para montaje en pared, ducto o cabinas de flujo estándar.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000004', 'Ventilador Axial', 'Ventilador de marco cuadrado para renovación masiva de aire en naves industriales.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000015', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000005', 'Ventilador Centrífugo', 'Ventilador de carcasa de acero reforzado con transmisión por bandas/poleas.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000016', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000006', 'Ventilador Encajonado', 'Gabinete acústico insonorizado con ventilador de doble oído incorporado.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000017', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000007', 'Ventilador Tubo Axial', 'Ventilador cilíndrico tubular para acople directo en sistemas de ductos.', 'ACTIVO'),
+('a3c00000-0000-0000-0000-000000000018', 'a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000007', 'PRO-000008', 'Ventilador Extractor Centrífugo Blower', 'Combo extractor tipo caracol con turbina balanceada dinámicamente.', 'ACTIVO'),
+-- Apex
+('b3c00000-0000-0000-0000-000000000011', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000001', 'Blower', 'Extractor industrial centrífugo con álabes inclinados para presiones elevadas.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000012', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000002', 'Extractor Tipo Hongo Inox', 'Extractor para techos fabricado en acero inoxidable 304 ideal para intemperie.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000013', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000004', 'PRO-000003', 'Extractor Multiusos', 'Equipo versátil para montaje en pared, ducto o cabinas de flujo estándar.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000014', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000004', 'Ventilador Axial', 'Ventilador de marco cuadrado para renovación masiva de aire en naves industriales.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000015', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000005', 'Ventilador Centrífugo', 'Ventilador de carcasa de acero reforzado con transmisión por bandas/poleas.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000016', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000006', 'Ventilador Encajonado', 'Gabinete acústico insonorizado con ventilador de doble oído incorporado.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000017', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000007', 'Ventilador Tubo Axial', 'Ventilador cilíndrico tubular para acople directo en sistemas de ductos.', 'ACTIVO'),
+('b3c00000-0000-0000-0000-000000000018', 'b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000007', 'PRO-000008', 'Ventilador Extractor Centrífugo Blower', 'Combo extractor tipo caracol con turbina balanceada dinámicamente.', 'ACTIVO')
+ON CONFLICT (id) DO NOTHING;
+
+-- 19. Insertar Formulario del Wizard ( website_forms )
+INSERT INTO website_forms (id, tenant_id, form_code, name, form_type) VALUES
+('a3c00000-0000-0000-0000-000000000099', 'a0000000-0000-0000-0000-000000000000', 'FRM-000001', 'Wizard de Preingeniería', 'WIZARD'),
+('b3c00000-0000-0000-0000-000000000099', 'b0000000-0000-0000-0000-000000000000', 'FRM-000001', 'Wizard de Preingeniería', 'WIZARD')
+ON CONFLICT (id) DO NOTHING;
+
+-- 20. Insertar campos de formulario ( website_form_fields )
+INSERT INTO website_form_fields (tenant_id, form_id, field_key, field_name, field_type, is_required, sort_order, options, validation_rules) VALUES
+-- Acme
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'servicio', 'Tipo de Servicio', 'LIST', true, 10, '["fabricacion", "venta", "mantenimiento", "reparacion"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'length', 'Largo (metros)', 'NUMBER', true, 20, '[]', '{"min": 1, "max": 1000}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'width', 'Ancho (metros)', 'NUMBER', true, 30, '[]', '{"min": 1, "max": 1000}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'height', 'Alto (metros)', 'NUMBER', true, 40, '[]', '{"min": 1, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'environment', 'Ambiente Operativo', 'LIST', true, 50, '["heavy_plant", "data_center", "mining", "warehouse", "default"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'nombre', 'Nombre de Contacto', 'TEXT', true, 60, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'empresa', 'Razón Social', 'TEXT', true, 70, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'cargo', 'Cargo Profesional', 'LIST', true, 80, '["Director de Planta", "Gerente de Mantenimiento", "Supervisor de HVAC / Operaciones", "Ingeniero de Proyectos", "Compras / Abastecimiento", "Otro"]', '{}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'telefono', 'Teléfono Corporativo', 'TEXT', true, 90, '[]', '{"regex": "^(\\+?57)?(3\\d{9}|60[1-8]\\d{7})$"}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'email', 'Correo Corporativo', 'TEXT', true, 100, '[]', '{"email": true}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'ciudad', 'Ciudad de la Planta', 'TEXT', true, 110, '[]', '{"min": 2, "max": 100}'),
+('a0000000-0000-0000-0000-000000000000', 'a3c00000-0000-0000-0000-000000000099', 'urgencia', 'Urgencia del Requerimiento', 'LIST', true, 120, '["baja", "media", "alta"]', '{}'),
+-- Apex
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'servicio', 'Tipo de Servicio', 'LIST', true, 10, '["fabricacion", "venta", "mantenimiento", "reparacion"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'length', 'Largo (metros)', 'NUMBER', true, 20, '[]', '{"min": 1, "max": 1000}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'width', 'Ancho (metros)', 'NUMBER', true, 30, '[]', '{"min": 1, "max": 1000}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'height', 'Alto (metros)', 'NUMBER', true, 40, '[]', '{"min": 1, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'environment', 'Ambiente Operativo', 'LIST', true, 50, '["heavy_plant", "data_center", "mining", "warehouse", "default"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'nombre', 'Nombre de Contacto', 'TEXT', true, 60, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'empresa', 'Razón Social', 'TEXT', true, 70, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'cargo', 'Cargo Profesional', 'LIST', true, 80, '["Director de Planta", "Gerente de Mantenimiento", "Supervisor de HVAC / Operaciones", "Ingeniero de Proyectos", "Compras / Abastecimiento", "Otro"]', '{}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'telefono', 'Teléfono Corporativo', 'TEXT', true, 90, '[]', '{"regex": "^(\\+?57)?(3\\d{9}|60[1-8]\\d{7})$"}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'email', 'Correo Corporativo', 'TEXT', true, 100, '[]', '{"email": true}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'ciudad', 'Ciudad de la Planta', 'TEXT', true, 110, '[]', '{"min": 2, "max": 100}'),
+('b0000000-0000-0000-0000-000000000000', 'b3c00000-0000-0000-0000-000000000099', 'urgencia', 'Urgencia del Requerimiento', 'LIST', true, 120, '["baja", "media", "alta"]', '{}')
+ON CONFLICT (tenant_id, form_id, field_key) DO NOTHING;
