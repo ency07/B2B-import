@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  Sparkles,
   Search,
   Plus,
   Wind,
@@ -25,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
+import { PageHeader, LoadingState, ErrorAlert, SheetFormActions } from "@/components/shared";
 import {
   Form,
   FormControl,
@@ -220,22 +219,12 @@ export default function RequirementsPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo de Ingeniería
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Requerimientos Técnicos y Visitas
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Levantamiento de campo, simulación termodinámica y validación de ducterías en tiempo de ejecución.
-          </p>
-        </div>
-
-        {/* Sheet for new technical requirements */}
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <PageHeader
+        moduleLabel="Módulo de Ingeniería"
+        title="Requerimientos Técnicos y Visitas"
+        description="Levantamiento de campo, simulación termodinámica y validación de ducterías en tiempo de ejecución."
+        action={
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
               <Plus className="w-4 h-4" /> Nuevo Requerimiento
@@ -249,11 +238,7 @@ export default function RequirementsPage() {
                 <p className="text-xs text-muted-foreground">Inicia la ficha técnica a partir del contacto comercial B2B.</p>
               </div>
 
-              {errorMsg && (
-                <div className="p-3.5 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive font-mono">
-                  {errorMsg}
-                </div>
-              )}
+              <ErrorAlert message={errorMsg} />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -340,21 +325,18 @@ export default function RequirementsPage() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-border mt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsSheetOpen(false)} disabled={submitting} className="border-border text-foreground text-xs hover:bg-accent cursor-pointer bg-card">
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs cursor-pointer px-4">
-                      {submitting ? <Spinner size="sm" className="mr-2 text-primary-foreground" /> : null}
-                      Registrar Requerimiento
-                    </Button>
-                  </div>
+                  <SheetFormActions
+                    submitting={submitting}
+                    onCancel={() => setIsSheetOpen(false)}
+                    submitLabel="Registrar Requerimiento"
+                  />
                 </form>
               </Form>
             </div>
           </SheetContent>
         </Sheet>
-      </div>
+        }
+      />
 
       {/* Main split grid layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -372,10 +354,7 @@ export default function RequirementsPage() {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 border border-border rounded-xl bg-card/30">
-              <Spinner size="lg" className="text-muted-foreground mb-2" />
-              <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest font-bold">Cargando requerimientos...</span>
-            </div>
+            <LoadingState message="Cargando requerimientos..." />
           ) : (
             <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
               {filteredRequirements.map(req => {

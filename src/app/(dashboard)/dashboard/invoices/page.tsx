@@ -9,7 +9,6 @@ import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -18,10 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
   Plus, 
-  Sparkles,
   Calendar,
   User,
   FileText,
@@ -33,15 +29,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { PageHeader, LoadingState, ErrorAlert, DataTable, SheetFormActions } from "@/components/shared";
+import { formatCurrency } from "@/utils/format";
 import {
   Sheet,
   SheetContent,
@@ -81,24 +70,6 @@ interface ClientOption {
   id: string;
   name: string;
 }
-
-// Utility currency formatter for COP/USD
-const formatCurrency = (amount: number) => {
-  if (amount < 100000) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 export default function InvoicesPage() {
   const searchParams = useSearchParams();
@@ -293,25 +264,16 @@ export default function InvoicesPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo de Finanzas
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Facturas y Cobranza B2B
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Administración de cuentas por cobrar, estados de pago de cuentas industriales y registro de abonos.
-          </p>
-        </div>
-
-        {/* Action Button using Sheet */}
-        <Button onClick={handleOpenCreate} className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
-          <Plus className="w-4 h-4" /> Emitir Factura
-        </Button>
-      </div>
+      <PageHeader
+        moduleLabel="Módulo de Finanzas"
+        title="Facturas y Cobranza B2B"
+        description="Administración de cuentas por cobrar, estados de pago de cuentas industriales y registro de abonos."
+        action={
+          <Button onClick={handleOpenCreate} className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
+            <Plus className="w-4 h-4" /> Emitir Factura
+          </Button>
+        }
+      />
 
       {/* Filter and table */}
       <div className="space-y-4">
@@ -326,80 +288,14 @@ export default function InvoicesPage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 border border-border rounded-xl bg-card/30">
-            <Spinner size="lg" className="text-muted-foreground mb-2" />
-            <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest font-bold">Cargando facturas...</span>
-          </div>
+          <LoadingState message="Cargando facturas..." />
         ) : (
-          <>
-            <div className="rounded-xl border border-border bg-card/45 backdrop-blur-md overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="border-b border-border bg-accent/40 hover:bg-accent/40">
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground py-3">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow 
-                        key={row.id}
-                        onClick={() => handleOpenDetail(row.original)}
-                        className="cursor-pointer transition-colors border-b border-border/40 hover:bg-accent/30"
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-2 px-3">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-xs text-muted-foreground font-mono uppercase tracking-widest py-8">
-                        // No se encontraron facturas emitidas.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-              <div>
-                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="h-8 px-3 border-border bg-card hover:bg-accent text-foreground cursor-pointer"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="h-8 px-3 border-border bg-card hover:bg-accent text-foreground cursor-pointer"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
+          <DataTable
+            table={table}
+            columnCount={6}
+            emptyMessage="// No se encontraron facturas emitidas."
+            onRowClick={handleOpenDetail}
+          />
         )}
       </div>
 
@@ -416,11 +312,7 @@ export default function InvoicesPage() {
                 <p className="text-xs text-muted-foreground">Ingresa los conceptos e importe total para generar el registro de venta.</p>
               </div>
 
-              {errorMsg && (
-                <div className="p-3.5 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive font-mono">
-                  {errorMsg}
-                </div>
-              )}
+              <ErrorAlert message={errorMsg} />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -486,15 +378,11 @@ export default function InvoicesPage() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-border mt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsSheetOpen(false)} disabled={submitting} className="border-border text-foreground text-xs hover:bg-accent cursor-pointer bg-card">
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs cursor-pointer px-4">
-                      {submitting ? <Spinner size="sm" className="mr-2 text-primary-foreground" /> : null}
-                      Emitir Factura
-                    </Button>
-                  </div>
+                  <SheetFormActions
+                    submitting={submitting}
+                    onCancel={() => setIsSheetOpen(false)}
+                    submitLabel="Emitir Factura"
+                  />
                 </form>
               </Form>
             </div>

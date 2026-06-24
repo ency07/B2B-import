@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Sparkles,
   Search,
   Plus,
   CheckCircle2,
@@ -17,29 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/shared";
+import { formatCurrency } from "@/utils/format";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-// Formatting utility for COP/USD
-const formatCurrency = (amount: number) => {
-  if (amount < 100000) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 interface PurchaseOrder {
   id: string;
@@ -140,27 +123,19 @@ export default function PurchasesPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo de Abastecimiento
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Órdenes de Compra (OC)
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Control de adquisiciones de motores, láminas y componentes electromecánicos con checklist de recepción.
-          </p>
-        </div>
-
-        <Button 
-          onClick={() => alert("Función para crear orden de compra simulada...")}
-          className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" /> Nueva Orden de Compra
-        </Button>
-      </div>
+      <PageHeader
+        moduleLabel="Módulo de Abastecimiento"
+        title="Órdenes de Compra (OC)"
+        description="Control de adquisiciones de motores, láminas y componentes electromecánicos con checklist de recepción."
+        action={
+          <Button 
+            onClick={() => alert("Función para crear orden de compra simulada...")}
+            className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" /> Nueva Orden de Compra
+          </Button>
+        }
+      />
 
       {/* Grid 40/60 Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
