@@ -114,6 +114,7 @@ export default function JobsPage() {
   // States
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [selectedJob, setSelectedJob] = React.useState<Job | null>(null);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
@@ -137,16 +138,17 @@ export default function JobsPage() {
 
   const loadJobs = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getJobs(tenantParam);
       setJobs(data);
-      // If we already have a selected job, refresh its reference from new data
       if (selectedJob) {
         const updated = data.find((j) => j.id === selectedJob.id);
         if (updated) setSelectedJob(updated);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Error loading jobs:", err);
+      setLoadError(err.message || "Error al cargar los trabajos.");
     } finally {
       setLoading(false);
     }

@@ -101,6 +101,7 @@ export default function QuotesPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [addingItem, setAddingItem] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
@@ -127,6 +128,7 @@ export default function QuotesPage() {
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const qList = await getQuotes(tenantParam);
       const cList = await getClients(tenantParam);
@@ -139,15 +141,15 @@ export default function QuotesPage() {
         const updated = qList.find(q => q.id === selectedQuote.id);
         if (updated) {
           setSelectedQuote(updated);
-          // Reload items for active quote
           setItemsLoading(true);
           const iList = await getQuoteItems(updated.id);
           setItems(iList);
           setItemsLoading(false);
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Error loading quotes data:", err);
+      setLoadError(err.message || "Error al cargar las cotizaciones.");
     } finally {
       setLoading(false);
     }

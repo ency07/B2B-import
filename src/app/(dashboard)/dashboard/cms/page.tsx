@@ -142,6 +142,7 @@ export default function CmsPage() {
   const [brandingState, setBrandingState] = React.useState<BrandingConfig>(getBrandingDefaults(tenantParam));
   const [isBrandingLoading, setIsBrandingLoading] = React.useState(true);
   const [isBrandingSubmitting, setIsBrandingSubmitting] = React.useState(false);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   // Additional mock settings for detailed Hero settings
   const [heroLoop, setHeroLoop] = React.useState(true);
@@ -211,8 +212,9 @@ export default function CmsPage() {
       try {
         const data = await getTenantBranding(tenantParam);
         setBrandingState(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading branding in CMS:", err);
+        setLoadError(err.message || "Error al cargar la configuración de marca.");
       } finally {
         setIsBrandingLoading(false);
       }
@@ -246,8 +248,9 @@ export default function CmsPage() {
     try {
       const data = await getIndustrialCatalog(tenantParam);
       setCatalog(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading catalog:", err);
+      setLoadError(err.message || "Error al cargar el catálogo.");
     } finally {
       setIsCatalogLoading(false);
     }

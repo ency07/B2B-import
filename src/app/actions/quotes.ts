@@ -31,7 +31,7 @@ export async function getQuotes(tenantCode?: string | null): Promise<QuoteRow[]>
 
   if (error) {
     console.error("Error fetching quotes:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   const rows = (data ?? []).map((row: any) => ({
@@ -82,7 +82,7 @@ export async function getQuoteItems(quoteId: string) {
 
   if (error) {
     console.error("Error fetching quote items:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   return data;

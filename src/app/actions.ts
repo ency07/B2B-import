@@ -139,7 +139,7 @@ export async function createJob(
   const tenantId = await getTenantId(tenantCode);
 
   // Retrieve default references to satisfy constraints
-  const { data: client } = await supabaseAdmin
+  const { data: client, error: clientErr } = await supabaseAdmin
     .from("clients")
     .select("id")
     .eq("tenant_id", tenantId)
@@ -147,12 +147,20 @@ export async function createJob(
     .limit(1)
     .single();
 
-  const { data: req } = await supabaseAdmin
+  if (clientErr) {
+    console.error("Error fetching default client for job:", clientErr);
+  }
+
+  const { data: req, error: reqErr } = await supabaseAdmin
     .from("requirements")
     .select("id")
     .eq("tenant_id", tenantId)
     .limit(1)
     .single();
+
+  if (reqErr) {
+    console.error("Error fetching default requirement for job:", reqErr);
+  }
 
   const siteId = tenantId === "b0000000-0000-0000-0000-000000000000"
     ? "b1000000-0000-0000-0000-000000000000"
@@ -447,7 +455,7 @@ export async function createInvoice(
   }
 
   // Insert invoice items
-  await supabaseAdmin.from("invoice_items").insert({
+  const { error: itemError } = await supabaseAdmin.from("invoice_items").insert({
     tenant_id: tenantId,
     invoice_id: invoice.id,
     description: invoiceData.concept,
@@ -455,6 +463,11 @@ export async function createInvoice(
     unit_price: invoiceData.amount,
     line_total: invoiceData.amount,
   });
+
+  if (itemError) {
+    console.error("Error creating invoice item:", itemError);
+    throw new Error(itemError.message);
+  }
 
   return invoice;
 }

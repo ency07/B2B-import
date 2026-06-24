@@ -82,6 +82,7 @@ export default function LeadsPage() {
 
   const [leads, setLeads] = React.useState<LeadRow[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [selectedLead, setSelectedLead] = React.useState<LeadRow | null>(null);
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([{ id: "created_at", desc: true }]);
@@ -90,11 +91,13 @@ export default function LeadsPage() {
 
   const loadLeads = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getLeads(tenantParam);
       setLeads(data);
     } catch (err: any) {
       console.error("Error cargando leads:", err);
+      setLoadError(err.message || "Error al cargar los leads.");
     } finally {
       setLoading(false);
     }
@@ -419,8 +422,9 @@ function LeadDetailSheet({ lead, open, onClose, onRefresh }: {
       await updateLeadStatus(lead.id, status);
       await onRefresh();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error actualizando lead:", err);
+      alert(`Error al actualizar estado del lead: ${err.message || err}`);
     } finally {
       setUpdating(false);
     }

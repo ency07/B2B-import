@@ -81,6 +81,8 @@ export default function RequirementsPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+
   // UI States
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -118,6 +120,7 @@ export default function RequirementsPage() {
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const reqs = await getRequirements(tenantParam);
       const clis = await getClients(tenantParam);
@@ -128,8 +131,9 @@ export default function RequirementsPage() {
         const updated = reqs.find(r => r.id === selectedReq.id);
         if (updated) setSelectedReq(updated);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading requirements data:", err);
+      setLoadError(err.message || "Error al cargar los requerimientos.");
     } finally {
       setLoading(false);
     }

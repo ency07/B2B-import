@@ -30,7 +30,7 @@ export async function getTenantBranding(tenantCode?: string | null): Promise<Bra
 
   if (error) {
     console.error("Error fetching branding settings:", error);
-    return defaults;
+    throw new Error(error.message);
   }
 
   const config = { ...defaults };
@@ -113,6 +113,7 @@ export async function saveTenantBranding(
 
     if (verErr) {
       console.error("Error fetching latest version number:", verErr);
+      return { success: false, error: verErr.message };
     }
 
     const nextVersion = latestVer ? latestVer.version_number + 1 : 1;
@@ -154,7 +155,7 @@ export async function getBrandingHistory(tenantCode?: string | null): Promise<Br
 
   if (error) {
     console.error("Error fetching branding history:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   return (data || []) as BrandingVersion[];
@@ -245,6 +246,7 @@ export async function restoreBrandingVersion(
 
     if (versionErr) {
       console.error("Error logging version restoration:", versionErr);
+      return { success: false, error: versionErr.message };
     }
 
     return { success: true };

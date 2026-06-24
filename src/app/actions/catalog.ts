@@ -93,7 +93,10 @@ export async function getIndustrialCatalog(tenantCode?: string | null): Promise<
       .is("deleted_at", null)
       .order("name", { ascending: true });
 
-    if (subError) continue;
+    if (subError) {
+      console.error(`Error fetching subcategories for category ${cat.id}:`, subError);
+      continue;
+    }
 
     const parsedSubcategories: CatalogSubcategory[] = [];
 
@@ -107,7 +110,10 @@ export async function getIndustrialCatalog(tenantCode?: string | null): Promise<
         .is("deleted_at", null)
         .order("name", { ascending: true });
 
-      if (famError) continue;
+      if (famError) {
+        console.error(`Error fetching families for subcategory ${subcat.id}:`, famError);
+        continue;
+      }
 
       const parsedFamilies: CatalogFamily[] = [];
 
@@ -121,7 +127,10 @@ export async function getIndustrialCatalog(tenantCode?: string | null): Promise<
           .is("deleted_at", null)
           .order("name", { ascending: true });
 
-        if (serError) continue;
+        if (serError) {
+          console.error(`Error fetching series for family ${fam.id}:`, serError);
+          continue;
+        }
 
         const parsedSeries: CatalogSeries[] = [];
 
@@ -135,7 +144,10 @@ export async function getIndustrialCatalog(tenantCode?: string | null): Promise<
             .is("deleted_at", null)
             .order("name", { ascending: true });
 
-          if (prodError) continue;
+          if (prodError) {
+            console.error(`Error fetching products for series ${ser.id}:`, prodError);
+            continue;
+          }
 
           const parsedProducts: ProductDetail[] = [];
 
@@ -391,7 +403,10 @@ export async function saveProduct(
         .delete()
         .eq("product_id", productId);
 
-      if (deleteSpecsErr) console.error("Error clearing specs:", deleteSpecsErr);
+      if (deleteSpecsErr) {
+        console.error("Error clearing specs:", deleteSpecsErr);
+        throw new Error(deleteSpecsErr.message);
+      }
 
       const specRows = Object.entries(product.specifications || {}).map(([name, val]) => ({
         product_id: productId,

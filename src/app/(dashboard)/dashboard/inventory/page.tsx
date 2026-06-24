@@ -90,6 +90,7 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -107,11 +108,13 @@ export default function InventoryPage() {
 
   const loadStock = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getInventoryStock(tenantParam);
       setStock(data);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error loading inventory stock:", err);
+      setLoadError(err.message || "Error al cargar el inventario.");
     } finally {
       setLoading(false);
     }

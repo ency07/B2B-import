@@ -56,6 +56,7 @@ export default function SettingsPage() {
   const [isUploading, setIsUploading] = React.useState<string | null>(null);
   const [historyList, setHistoryList] = React.useState<BrandingVersion[]>([]);
   const [versionDescription, setVersionDescription] = React.useState("");
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   // Integrations state
   const [telegramToken, setTelegramToken] = React.useState("");
@@ -83,8 +84,9 @@ export default function SettingsPage() {
         // Load branding snapshots history
         const history = await getBrandingHistory(tenantParam);
         setHistoryList(history);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading settings:", err);
+        setLoadError(err.message || "Error al cargar la configuración.");
       } finally {
         setIsBrandingLoading(false);
       }
