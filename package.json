@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:multitenant": "ts-node scripts/test-multitenant.ts",
     "test:clients": "ts-node scripts/test-clients.ts",
     "test:requirements": "ts-node scripts/test-requirements.ts",
@@ -72,6 +75,7 @@
     "pg": "^8.22.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "vitest": "^4.1.9"
   }
 }
