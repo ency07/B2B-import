@@ -1,6 +1,8 @@
 import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 async function main() {
   console.log('Iniciando deploy de migraciones en la base de datos Supabase...');
@@ -14,14 +16,19 @@ async function main() {
   const sql = fs.readFileSync(sqlPath, 'utf8');
   console.log(`Cargado archivo SQL consolidado (${sql.length} bytes).`);
 
+  if (!process.env.DB_HOST || !process.env.DB_PASSWORD) {
+    console.error('Error: DB_HOST and DB_PASSWORD must be set in environment variables or .env file.');
+    process.exit(1);
+  }
+
   const client = new Client({
-    host: 'aws-1-us-west-2.pooler.supabase.com',
-    port: 5432,
-    user: 'postgres.jcsjfvrfsohahnoovjgf',
-    password: 'UuTt7pdS5O75mbR6',
-    database: 'postgres',
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'postgres',
     ssl: {
-      rejectUnauthorized: false
+      rejectUnauthorized: true
     }
   });
 
