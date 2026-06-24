@@ -32,6 +32,7 @@ import {
   ExternalLink,
   ShieldCheck,
   FileText,
+  Wind,
   Image as ImageIcon
 } from "lucide-react";
 
@@ -396,8 +397,10 @@ export default function CmsPage() {
         })}
       </div>
 
-      {/* Tab Content */}
-      <div className="p-6 rounded-2xl border border-border bg-card/40 backdrop-blur-md min-h-[520px]">
+      {/* Grid split for Live Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left forms pane */}
+        <div className="lg:col-span-8 p-6 rounded-2xl border border-border bg-card/40 backdrop-blur-md min-h-[520px]">
 
         {/* ==================== TAB: LANDING / HERO ==================== */}
         {activeTab === "hero" && (
@@ -984,7 +987,207 @@ export default function CmsPage() {
             </div>
           </div>
         )}
+      </div>
 
+        {/* Right Live Preview pane (4 columns) */}
+        <div className="lg:col-span-4 space-y-6 sticky top-24">
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-5 shadow-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-primary uppercase font-bold">
+                <Sparkles className="w-3.5 h-3.5" /> Vista Previa de Landing
+              </div>
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-bold">REAL-TIME</span>
+            </div>
+
+            {/* Dynamic Active Preview Panel */}
+            <div className="space-y-4">
+              
+              {/* Tab: Hero */}
+              {activeTab === "hero" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Sección Hero (Portada Comercial)</span>
+                  
+                  <div className="border border-border rounded-lg p-4 bg-[#FAF9F5] space-y-2 relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-[0.02] schematic-grid pointer-events-none" />
+                    
+                    <div className="relative z-10 space-y-2 text-left">
+                      <span className="text-[7px] font-mono border border-slate-300 px-1.5 py-0.5 rounded uppercase text-slate-500 tracking-wider font-bold">
+                        AEROMAX TELEMETRÍA
+                      </span>
+                      <h4 
+                        className="text-xs font-black uppercase text-slate-900 leading-tight truncate"
+                        style={{ color: brandingState.color_primario, fontFamily: brandingState.tipografia_principal }}
+                      >
+                        {brandingState.landing_titulo || "ESPECIALISTAS"}
+                      </h4>
+                      <p className="text-[8px] text-slate-500 leading-relaxed line-clamp-3 font-sans">
+                        {brandingState.landing_subtitulo || "Diseño, venta e instalación..."}
+                      </p>
+
+                      <div className="flex gap-1.5 pt-1.5">
+                        <div 
+                          className="px-2 py-1 text-[7px] font-mono font-bold text-white uppercase rounded-full"
+                          style={{ backgroundColor: brandingState.color_primario }}
+                        >
+                          {heroButton1Text}
+                        </div>
+                        <div className="px-2 py-1 text-[7px] font-mono font-bold text-slate-700 bg-white border border-slate-300 rounded-full">
+                          {heroButton2Text}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Sectores */}
+              {activeTab === "sectores" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Sectores Industriales Cubiertos</span>
+                  <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                    <div className="p-2 border border-border rounded-lg bg-card text-[9px] space-y-1">
+                      <div className="flex justify-between font-bold text-foreground">
+                        <span>01 / MINERÍA Y CANTERAS</span>
+                        <span className="text-primary font-mono" style={{ color: brandingState.color_primario }}>Cálculo OK</span>
+                      </div>
+                      <p className="text-muted-foreground text-[8px]">Solución de ventilación secundaria y captación de polvo en túneles.</p>
+                    </div>
+                    <div className="p-2 border border-border rounded-lg bg-card text-[9px] space-y-1">
+                      <div className="flex justify-between font-bold text-foreground">
+                        <span>02 / PLANTAS DE CEMENTO</span>
+                        <span className="text-primary font-mono" style={{ color: brandingState.color_primario }}>SST Activo</span>
+                      </div>
+                      <p className="text-muted-foreground text-[8px]">Extractores centrífugos pesados para hornos a altas temperaturas.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Cases */}
+              {activeTab === "cases" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Bitácora de Casos de Éxito</span>
+                  <div className="p-3 border border-border rounded-lg bg-card text-[9px] space-y-2 border-l-4 border-l-primary" style={{ borderLeftColor: brandingState.color_primario }}>
+                    <div className="font-bold text-foreground font-mono">// CASE_STUDY_01: CEMENTERA DEL CARIBE</div>
+                    <p className="text-muted-foreground text-[8px] leading-relaxed">
+                      Sustitución de álabes axiales de 120" en extractor hongo. Reducción de vibración en un 40% y aumento de eficiencia en CFM.
+                    </p>
+                    <div className="text-[7px] text-zinc-400 font-mono">Firmado por: Ing. Carlos Mendoza</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Catalog */}
+              {activeTab === "catalog" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Ficha Técnica de Producto</span>
+                  
+                  <div className="border border-border/80 rounded-xl bg-card overflow-hidden shadow-xs">
+                    <div className="h-20 bg-muted/20 border-b border-border flex items-center justify-center relative">
+                      <div className="absolute inset-0 opacity-10 schematic-grid" />
+                      {/* Simulated fan spinning dynamically */}
+                      <Wind className="w-8 h-8 text-primary animate-spin-slow" style={{ color: brandingState.color_primario }} />
+                    </div>
+                    <div className="p-3 text-[10px] space-y-1">
+                      <div className="text-[7px] font-mono text-muted-foreground">EQUIPO INDUSTRIAL</div>
+                      <span className="font-bold text-foreground block">
+                        {editingProduct ? editingProduct.name : "Extractor Tipo Hongo Inox"}
+                      </span>
+                      <p className="text-[8px] text-muted-foreground line-clamp-2 leading-relaxed">
+                        {editingProduct ? editingProduct.description : "Unidad fabricada en inoxidable 304..."}
+                      </p>
+                      <div className="border-t border-border/50 pt-2 flex justify-between text-[8px] font-mono">
+                        <span>Caudal: <strong className="text-foreground">{editingProduct?.specifications?.Caudal || "5,000 CFM"}</strong></span>
+                        <span className="text-primary font-bold" style={{ color: brandingState.color_primario }}>Ficha Técnica ➔</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Media */}
+              {activeTab === "media" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Biblioteca de Medios en el Servidor</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {mediaList.slice(0, 3).map((item) => (
+                      <div key={item.id} className="aspect-square border border-border rounded-lg bg-card/60 relative overflow-hidden flex flex-col items-center justify-center text-[7px] font-mono">
+                        <ImageIcon className="w-4 h-4 text-muted-foreground/60 mb-1" />
+                        <span className="truncate max-w-[45px] text-[6px] text-muted-foreground">{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Blog */}
+              {activeTab === "blog" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Portada de Blog Técnico</span>
+                  <div className="p-3 border border-border rounded-lg bg-card text-[9px] space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[7px] font-mono text-primary uppercase font-bold" style={{ color: brandingState.color_primario }}>
+                        {editingArticle ? editingArticle.category : "Ingeniería"}
+                      </span>
+                      <span className="text-[7px] font-mono text-muted-foreground">Lectura: 5 min</span>
+                    </div>
+                    <h5 className="font-bold text-foreground truncate">{editingArticle ? editingArticle.title : "Ventilación Forzada en Minería de Carbón"}</h5>
+                    <p className="text-muted-foreground text-[8px] line-clamp-2">
+                      Análisis detallado sobre el cálculo del caudal efectivo y las pérdidas por fricción en ductos flexibles.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: SEO */}
+              {activeTab === "seo" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Mockup de Búsqueda Google (SEO)</span>
+                  <div className="border border-border rounded-lg p-3 bg-white space-y-1 text-left">
+                    <div className="text-[8px] text-[#202124] flex items-center gap-1">
+                      <span>https://aeromax.co</span> <span className="text-[6px] opacity-60">▼</span>
+                    </div>
+                    <div className="text-xs font-bold text-[#1a0dab] hover:underline cursor-pointer truncate leading-tight font-sans">
+                      {metaTitle}
+                    </div>
+                    <p className="text-[9px] text-[#4d5156] leading-normal line-clamp-2 font-sans">
+                      {metaDescription}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Footer */}
+              {activeTab === "footer" && (
+                <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3 animate-in fade-in duration-200">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Pie de Página Público</span>
+                  <div className="border border-border rounded-lg p-3 bg-[#111] text-zinc-400 space-y-2 text-[8px] text-left">
+                    <div className="grid grid-cols-2 gap-2 border-b border-zinc-800 pb-2">
+                      <div>
+                        <div className="font-bold text-white text-[9px] mb-1 font-sans">Contacto</div>
+                        <div className="truncate">Email: contacto@aeromax.co</div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-[9px] mb-1 font-sans">Redes</div>
+                        <div className="truncate">LinkedIn: {socialLinkedin || "linkedin.com"}</div>
+                      </div>
+                    </div>
+                    <div className="text-[7px] text-zinc-500 font-mono truncate">
+                      {copyrightText || "© 2026 AeroMax Industrial. Todos los derechos reservados."}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            <div className="text-[8px] text-muted-foreground leading-relaxed font-mono pt-2 border-t border-border">
+              * Edite títulos del Hero, subtítulos, campos de SEO o agregue parámetros a productos para actualizar esta maqueta visual interactiva.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,13 +6,13 @@ export interface TenantConfig {
 
 export const MOCK_TENANTS: Record<string, TenantConfig> = {
   acme: {
-    name: "VentiTech OS",
-    primaryColor: "199 89% 48%", // Sky Blue (VentiTech)
-    theme: "dark", // VentiTech uses sophisticated dark theme as primary
+    name: "AeroMax Industrial",
+    primaryColor: "199 89% 48%", // Sky Blue
+    theme: "dark",
   },
   ventitech: {
-    name: "VentiTech OS",
-    primaryColor: "199 89% 48%", // Sky Blue (VentiTech)
+    name: "AeroMax Industrial",
+    primaryColor: "199 89% 48%", // Sky Blue
     theme: "dark",
   },
   apex: {
@@ -21,7 +21,7 @@ export const MOCK_TENANTS: Record<string, TenantConfig> = {
     theme: "dark",
   },
   default: {
-    name: "ERP B2B Premium",
+    name: "AeroMax Industrial",
     primaryColor: "240 5.9% 10%", // Default Dark
   },
 };

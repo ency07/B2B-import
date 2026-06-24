@@ -68,15 +68,15 @@ export function getBrandingDefaults(tenantCode?: string | null): BrandingConfig 
   
   return {
     // Subsection A
-    nombre_comercial: isApex ? "Apex Logística B2B" : "VentiTech",
-    razon_social: isApex ? "Apex Logistics B2B Group S.A. de C.V." : "VentiTech S.A.S.",
+    nombre_comercial: isApex ? "Apex Logística B2B" : "AeroMax Industrial",
+    razon_social: isApex ? "Apex Logistics B2B Group S.A. de C.V." : "AeroMax Industrial S.A.S.",
     nit: isApex ? "APX150508LL2" : "901.201.764-3",
     direccion: isApex ? "Km 12 Vía Aeropuerto Bodega 4" : "Calle 26 # 69D-91, Of. 402",
     ciudad: isApex ? "Bogotá" : "Bogotá",
     pais: isApex ? "Colombia" : "Colombia",
     telefono_principal: isApex ? "+57 601 765 4321" : "+57 300 123 4567",
-    email_corporativo: isApex ? "info@apexlogistics.com" : "contacto@ventitech.co",
-    web: isApex ? "https://apexlogistics.com" : "https://ventitech.co",
+    email_corporativo: isApex ? "info@apexlogistics.com" : "contacto@aeromax.co",
+    web: isApex ? "https://apexlogistics.com" : "https://aeromax.co",
     zona_horaria: "America/Bogota",
     idioma: "es",
     moneda: "COP",
@@ -97,7 +97,7 @@ export function getBrandingDefaults(tenantCode?: string | null): BrandingConfig 
     whatsapp: "",
 
     // Subsection C
-    color_primario: isApex ? "#2563EB" : "#0284c7", // Apex is blue, VentiTech is sky blue
+    color_primario: isApex ? "#2563EB" : "#0284c7", // Apex is blue, AeroMax is sky blue
     color_secundario: isApex ? "#0F172A" : "#111827",
     color_exito: "#10B981",
     color_warning: "#F59E0B",
@@ -115,9 +115,9 @@ export function getBrandingDefaults(tenantCode?: string | null): BrandingConfig 
     sello_url: "",
 
     // Nuevas configuraciones con defaults
-    nombre_erp: isApex ? "Apex ERP" : "Portal ERP Administrador",
-    nombre_portal_cliente: isApex ? "Apex Portal Cliente" : "Portal Cliente",
-    titulo_navegador: isApex ? "Apex B2B Logistics" : "Sistemas de Ventilación Industrial",
+    nombre_erp: isApex ? "Apex ERP" : "AeroMax ERP Administrador",
+    nombre_portal_cliente: isApex ? "Apex Portal Cliente" : "AeroMax Portal Cliente",
+    titulo_navegador: isApex ? "Apex B2B Logistics" : "AeroMax Sistemas de Ventilación Industrial",
     landing_video_url: "/video_hero.mp4",
     landing_titulo: "ESPECIALISTAS EN VENTILACIÓN INDUSTRIAL",
     landing_subtitulo: "Diseño, venta, instalación, mantenimiento y modernización de sistemas de inyección y extracción de aire controlado",

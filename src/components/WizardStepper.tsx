@@ -29,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { submitWizardData, WizardResult } from "@/app/actions/wizard";
 import { calculateRequiredCfm } from "@/utils/engineering";
 import { estimatePrice } from "@/utils/pricing";
@@ -69,7 +70,7 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
 
   // Formulario
   const [form, setForm] = useState({
-    servicio: "venta" as "fabricacion" | "venta" | "mantenimiento" | "reparacion",
+    servicio: "venta" as "fabricacion" | "venta" | "mantenimiento" | "reparacion" | "otro",
     urgencia: "media" as "baja" | "media" | "alta",
     length: 10,
     width: 8,
@@ -81,6 +82,7 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
     telefono: "",
     email: "",
     ciudad: "",
+    otroDetalle: ""
   });
 
   // Checklist de Síntomas / Desgaste
@@ -322,7 +324,7 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       doc.setLineWidth(1.5);
       doc.line(15, 15, 195, 15);
       doc.line(15, 282, 195, 282);
-
+ 
       doc.setTextColor(255, 255, 255);
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(22);
@@ -332,11 +334,11 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       doc.setFontSize(12);
       doc.setTextColor(156, 163, 175);
       doc.text("Estudio de Renovación de Aire y Caudal Requerido (CFM)", 105, 80, { align: "center" });
-
+ 
       doc.setDrawColor(82, 82, 91);
       doc.setLineWidth(0.5);
       doc.line(40, 95, 170, 95);
-
+ 
       // Metadatos
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
@@ -356,23 +358,23 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       doc.text(`Empresa: ${form.empresa}`, 45, 192);
       doc.text(`Cargo: ${form.cargo}`, 45, 202);
       doc.text(`Ubicación: ${form.ciudad}, Colombia`, 45, 212);
-
+ 
       doc.setFontSize(9);
       doc.setTextColor(113, 113, 122);
-      doc.text("VentiTech B2B Premium HVAC Systems", 105, 270, { align: "center" });
-
+      doc.text(`${siteName} B2B Premium HVAC Systems`, 105, 270, { align: "center" });
+ 
       // PAGE 2: Parámetros Técnicos
       doc.addPage();
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, 210, 297, "F");
-
+ 
       // Encabezado
       doc.setFillColor(30, 30, 30);
       doc.rect(0, 0, 210, 30, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text("VENTITECH - REPORTE DE CÁLCULO DE CAUDAL", 15, 18);
+      doc.text(`${siteName.toUpperCase()} - REPORTE DE CÁLCULO DE CAUDAL`, 15, 18);
 
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(12);
@@ -436,22 +438,19 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
 
       // PAGE 3: Estimación y Garantía
       doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, 210, 297, "F");
-
       // Encabezado Page 3
       doc.setFillColor(30, 30, 30);
       doc.rect(0, 0, 210, 30, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text("VENTITECH - PROPUESTA COMERCIAL PRELIMINAR", 15, 18);
-
+      doc.text(`${siteName.toUpperCase()} - PROPUESTA COMERCIAL PRELIMINAR`, 15, 18);
+ 
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(12);
       doc.text("3. ESTIMACIÓN PRESUPUESTARIA PRELIMINAR (B2B)", 15, 48);
       doc.line(15, 52, 195, 52);
-
+ 
       // Tabla Precios
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(10);
@@ -459,23 +458,23 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       doc.text("Rango de Inversión Mínimo", 80, 62);
       doc.text("Rango de Inversión Máximo", 140, 62);
       doc.line(15, 66, 195, 66);
-
+ 
       doc.setFont("Helvetica", "normal");
       doc.text("Pesos Colombianos (COP)", 20, 74);
       doc.text(formatCurrency(result.estimatedPriceMinCop), 80, 74);
       doc.text(formatCurrency(result.estimatedPriceMaxCop), 140, 74);
       doc.line(15, 78, 195, 78);
-
+ 
       doc.text("Dólares Americanos (USD)", 20, 86);
       doc.text(formatUsd(result.estimatedPriceMinUsd), 80, 86);
       doc.text(formatUsd(result.estimatedPriceMaxUsd), 140, 86);
       doc.line(15, 90, 195, 90);
-
+ 
       // Nota de Desviación
       doc.setFontSize(8.5);
       doc.setTextColor(113, 113, 122);
       doc.text("Nota: La estimación presupuestal incluye una desviación de ±15% y está calculada en base a las dimensiones ingresadas y la urgencia comercial especificada. Tasa fija de conversión: 1 USD = 4,000 COP.", 15, 100, { maxWidth: 180 });
-
+ 
       // Garantía
       doc.setTextColor(30, 30, 30);
       doc.setFontSize(12);
@@ -485,8 +484,8 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(9);
-      doc.text("Todos los proyectos de ventilación mecánica VentiTech son cubiertos bajo una Garantía de Fábrica Estándar de 12 meses computados a partir del cierre operacional de la Orden de Trabajo en el ERP. La garantía cubre fallas mecánicas de motor, deformación de álabes y problemas de balanceo estático-dinámico bajo uso normal en planta.", 20, 132, { maxWidth: 170 });
-
+      doc.text(`Todos los proyectos de ventilación mecánica de ${siteName} son cubiertos bajo una Garantía de Fábrica Estándar de 12 meses computados a partir del cierre operacional de la Orden de Trabajo en el ERP. La garantía cubre fallas mecánicas de motor, deformación de álabes y problemas de balanceo estático-dinámico bajo uso normal en planta.`, 20, 132, { maxWidth: 170 });
+ 
       // Firma y Disclaimer
       doc.setFillColor(244, 244, 245);
       doc.rect(15, 165, 180, 45, "F");
@@ -497,19 +496,19 @@ export default function WizardStepper({ branding }: WizardStepperProps) {
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(113, 113, 122);
-      doc.text("Este estudio de preingeniería es de carácter informativo y preliminar. No reemplaza un diseño ejecutivo detallado firmado por un ingeniero mecánico certificado. VentiTech no se hace responsable por variaciones térmicas o de presión si las dimensiones o renovación de aire real del establecimiento difieren de las ingresadas en este wizard.", 20, 183, { maxWidth: 170 });
-
+      doc.text(`Este estudio de preingeniería es de carácter informativo y preliminar. No reemplaza un diseño ejecutivo detallado firmado por un ingeniero mecánico certificado. ${siteName} no se hace responsable por variaciones térmicas o de presión si las dimensiones o renovación de aire real del establecimiento difieren de las ingresadas en este wizard.`, 20, 183, { maxWidth: 170 });
+ 
       // Guardar PDF
-      doc.save(`VentiTech_Reporte_Preingenieria_${result.diagnosticCode}.pdf`);
+      doc.save(`${siteName.replace(/\s+/g, "_")}_Reporte_Preingenieria_${result.diagnosticCode}.pdf`);
     } catch (err) {
       console.error("Error generating pdf client-side:", err);
     }
   };
-
+ 
   // WhatsApp click
   const getWhatsAppLink = () => {
     if (!result) return "";
-    const text = `Hola VentiTech. He terminado mi diagnóstico técnico en el wizard con código de reporte *${result.diagnosticCode}*.
+    const text = `Hola ${siteName}. He terminado mi diagnóstico técnico en el wizard con código de reporte *${result.diagnosticCode}*.
     
 - *Caudal Requerido:* ${result.requiredCfm.toLocaleString()} CFM (${result.cfmCategory})
 - *Empresa:* ${form.empresa} (Ciudad: ${form.ciudad})
@@ -668,7 +667,24 @@ Solicito una cotización formal y confirmación de disponibilidad técnica. Grac
                       <option value="fabricacion">Diseño y Fabricación Industrial a Medida</option>
                       <option value="mantenimiento">Mantenimiento Correctivo de Ductos y Motores</option>
                       <option value="reparacion">Reparación Técnica / Ajustes de Álabes</option>
+                      <option value="otro">Otro Requerimiento Especial</option>
                     </select>
+
+                    {form.servicio === "otro" && (
+                      <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <Label htmlFor="otroDetalle" className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 block mb-1">
+                          Describa detalladamente su requerimiento
+                        </Label>
+                        <Textarea
+                          id="otroDetalle"
+                          placeholder="Escriba aquí los detalles específicos para la validación de nuestros ingenieros..."
+                          value={form.otroDetalle}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange("otroDetalle", e.target.value)}
+                          className="bg-white border-zinc-200 text-xs text-zinc-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          rows={3}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -1021,29 +1037,15 @@ Solicito una cotización formal y confirmación de disponibilidad técnica. Grac
                   </p>
                 </div>
 
-                {/* Precios Estimados */}
-                <div className="p-5 border border-zinc-200 rounded-xl bg-zinc-50 grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 font-mono">
-                      <DollarSign className="w-4 h-4 text-emerald-600" /> Presupuesto Estimado (COP)
+                 {/* Pre-engineering notice instead of pricing in Step 4 */}
+                <div className="p-5 border border-zinc-200 rounded-xl bg-zinc-50 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-widest font-mono">
+                      Estudio de Inversión y Factibilidad
                     </h4>
-                    <div className="text-base font-bold text-zinc-900 font-mono">
-                      {formatCurrency(realtimePrice.rangeMinCop)} - {formatCurrency(realtimePrice.rangeMaxCop)}
-                    </div>
-                    <p className="text-[9px] text-zinc-500 mt-1">
-                      Margen de ±15% basado en dimensiones y urgencia.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5 font-mono">
-                      <DollarSign className="w-4 h-4 text-sky-600" /> Equivalente Comercial (USD)
-                    </h4>
-                    <div className="text-base font-bold text-zinc-700 font-mono">
-                      {formatUsd(realtimePrice.rangeMinUsd)} - {formatUsd(realtimePrice.rangeMaxUsd)}
-                    </div>
-                    <p className="text-[9px] text-zinc-500 mt-1">
-                      Tasa conversión estática de $4,000 COP.
+                    <p className="text-[11px] leading-relaxed text-zinc-600 normal-case">
+                      <strong>Importante:</strong> AeroMax Industrial prioriza el dimensionamiento correcto de la solución sobre cualquier propuesta económica. La cotización formal será emitida posterior a la validación física en planta por parte de nuestro equipo de ingenieros para garantizar la viabilidad aerodinámica.
                     </p>
                   </div>
                 </div>
@@ -1069,7 +1071,7 @@ Solicito una cotización formal y confirmación de disponibilidad técnica. Grac
                   </p>
                 </div>
 
-                {/* Ficha Resumen */}
+                {/* Ficha Resumen sin precios */}
                 <div className="max-w-md mx-auto border border-zinc-200 rounded-xl p-5 bg-zinc-50 text-left space-y-3.5 text-xs shadow-xs">
                   <div className="flex justify-between border-b border-zinc-200 pb-2">
                     <span className="text-zinc-500 font-medium">Código Diagnóstico</span>
@@ -1079,16 +1081,10 @@ Solicito una cotización formal y confirmación de disponibilidad técnica. Grac
                     <span className="text-zinc-500 font-medium">Caudal Calculado</span>
                     <span className="text-zinc-900 font-bold font-mono">{result.requiredCfm.toLocaleString()} CFM ({result.cfmCategory})</span>
                   </div>
-                  <div className="flex justify-between border-b border-zinc-200 pb-2">
-                    <span className="text-zinc-500 font-medium">Rango Presupuestal (COP)</span>
-                    <span className="text-emerald-600 font-bold font-mono">
-                      {formatCurrency(result.estimatedPriceMinCop)} - {formatCurrency(result.estimatedPriceMaxCop)}
-                    </span>
-                  </div>
                   <div className="flex justify-between pb-1">
-                    <span className="text-zinc-500 font-medium">Rango Presupuestal (USD)</span>
-                    <span className="text-sky-600 font-bold font-mono">
-                      {formatUsd(result.estimatedPriceMinUsd)} - {formatUsd(result.estimatedPriceMaxUsd)}
+                    <span className="text-zinc-500 font-medium">Estudio de Inversión</span>
+                    <span className="text-amber-600 font-bold uppercase tracking-widest font-mono">
+                      Pendiente de inspección física en planta
                     </span>
                   </div>
                 </div>
@@ -1184,15 +1180,26 @@ Solicito una cotización formal y confirmación de disponibilidad técnica. Grac
                   </div>
                 </div>
 
-                {/* Precios e Inversión */}
-                <div className="bg-white border border-zinc-200 p-4 rounded-xl space-y-2 font-mono text-xs shadow-xs">
-                  <div className="flex justify-between border-b border-zinc-100 pb-2">
-                    <span className="text-zinc-500">Inversión Mínima:</span>
-                    <span className="font-bold text-zinc-900">{formatCurrency(realtimePrice.rangeMinCop)}</span>
+                {/* Technical engineering diagnostic console instead of prices */}
+                <div className="bg-white border border-zinc-200 p-4 rounded-xl space-y-2.5 font-mono text-[9px] uppercase shadow-xs">
+                  <div className="text-zinc-400 font-bold border-b border-zinc-150 pb-1.5">// DIAGNÓSTICO PREINGENIERÍA B2B</div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Sizing Validation:</span>
+                    <span className="font-bold text-emerald-600">Calculado OK</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Inversión Máxima:</span>
-                    <span className="font-bold text-zinc-900">{formatCurrency(realtimePrice.rangeMaxCop)}</span>
+                    <span className="text-zinc-500">SST Compliance:</span>
+                    <span className="font-bold text-zinc-800">ISO G2.5 Requerido</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Espacio en Taller:</span>
+                    <span className="font-bold text-zinc-850">Línea Vía 40 Libre</span>
+                  </div>
+                  <div className="flex justify-between border-t border-zinc-100 pt-2.5">
+                    <span className="text-zinc-500 font-semibold">Prioridad de Despacho:</span>
+                    <span className={`font-bold ${form.urgencia === "alta" ? "text-red-600" : form.urgencia === "media" ? "text-amber-500" : "text-emerald-500"}`}>
+                      {form.urgencia === "alta" ? "SLA CRÍTICO" : form.urgencia === "media" ? "SLA MEDIO" : "SLA ESTÁNDAR"}
+                    </span>
                   </div>
                 </div>
               </div>

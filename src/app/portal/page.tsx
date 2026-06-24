@@ -76,15 +76,15 @@ export default function CustomerPortal() {
   const [expandedOt, setExpandedOt] = React.useState<string | null>("JOB-2026-001");
   const [downloadProgress, setDownloadProgress] = React.useState<Record<string, number>>({});
 
-  // Client info
-  const clientName = "Fundición Andina S.A.";
-  const clientNit = "NIT-800.198.273-5";
+  // Client info derived dynamically
+  const [clientName, setClientName] = React.useState("Fundición Andina S.A.");
+  const [clientNit, setClientNit] = React.useState("NIT-800.198.273-5");
 
   // OTs state
   const [ots, setOts] = React.useState([
     {
       code: "JOB-2026-001",
-      title: "Extractor Axial VentiTech VT-7500 CFM",
+      title: "Extractor Axial AeroMax VT-7500 CFM",
       status: "PRUEBAS", // DISEÑO -> CORTE -> BALANCEO -> PRUEBAS -> DESPACHO
       progress: 80,
       tech: "Ing. Carlos Mendoza",
@@ -199,11 +199,20 @@ export default function CustomerPortal() {
 
   // Simulated initial load
   React.useEffect(() => {
+    // Dynamic welcome customization mapping based on active URL tenant query
+    if (tenantParam === "apex") {
+      setClientName("Apex Logística B2B");
+      setClientNit("NIT-901.754.382-9");
+    } else {
+      setClientName("Fundición Andina S.A.");
+      setClientNit("NIT-800.198.273-5");
+    }
+
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1200);
     return () => clearTimeout(timer);
-  }, []);
+  }, [tenantParam]);
 
   // Theme support
   React.useEffect(() => {

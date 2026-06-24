@@ -7,7 +7,7 @@ import { estimatePrice } from "@/utils/pricing";
 import { createLeadWithScore } from "./leads";
 
 export interface WizardSubmission {
-  servicio: "fabricacion" | "venta" | "mantenimiento" | "reparacion";
+  servicio: "fabricacion" | "venta" | "mantenimiento" | "reparacion" | "otro";
   length: number;
   width: number;
   height: number;
@@ -19,6 +19,7 @@ export interface WizardSubmission {
   email: string;
   ciudad: string;
   urgencia: "baja" | "media" | "alta";
+  otroDetalle?: string;
 }
 
 export interface WizardResult {
@@ -162,7 +163,7 @@ export async function submitWizardData(
   const contactId = contact.id;
 
   // 4. Registrar Lead Calificado con Scoring en Español
-  const leadNotes = `Cálculo CFM: ${cfm}. Volumen M3: ${cubicMeters}. Urgencia: ${data.urgencia}. Ciudad: ${data.ciudad}.`;
+  const leadNotes = `Servicio: ${data.servicio}${data.servicio === "otro" && data.otroDetalle ? ` (${data.otroDetalle})` : ""}. Cálculo CFM: ${cfm}. Volumen M3: ${cubicMeters}. Urgencia: ${data.urgencia}. Ciudad: ${data.ciudad}.`;
   const lead = await createLeadWithScore(tenantCode, {
     clientId,
     contactId,

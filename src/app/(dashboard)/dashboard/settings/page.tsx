@@ -286,8 +286,10 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {/* Content Area */}
-      <div className="p-6 rounded-2xl border border-border bg-card/40 backdrop-blur-md min-h-[480px]">
+      {/* Grid split for Live Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left forms pane */}
+        <div className="lg:col-span-8 p-6 rounded-2xl border border-border bg-card/40 backdrop-blur-md min-h-[480px]">
         
         {isBrandingLoading ? (
           <div className="text-center py-16 font-mono text-xs text-muted-foreground animate-pulse">Cargando datos del sistema...</div>
@@ -786,6 +788,237 @@ export default function SettingsPage() {
             )}
           </>
         )}
+      </div>
+
+        {/* Right Live Preview pane (4 columns) */}
+        <div className="lg:col-span-4 space-y-6 sticky top-24">
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-5 shadow-lg relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-widest text-primary uppercase font-bold">
+                <Sparkles className="w-3.5 h-3.5" /> Consola de Marca en Vivo
+              </div>
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-bold">VISTA PREVIA</span>
+            </div>
+
+            {/* Dynamic Active Preview Panel */}
+            <div className="space-y-4">
+              
+              {/* Tab: Empresa */}
+              {activeTab === "empresa" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  {/* Tarjeta de Presentación Corporativa */}
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Ficha de Inquilino ERP</span>
+                    <div className="border border-border/80 rounded-lg p-3 bg-card space-y-2 text-[10px]">
+                      <div className="font-bold text-foreground truncate" style={{ fontFamily: brandingState.tipografia_principal }}>
+                        {brandingState.razon_social || "Razón Social Inc."}
+                      </div>
+                      <div className="text-muted-foreground space-y-1">
+                        <div><span className="font-semibold text-foreground/80">Comercial:</span> {brandingState.nombre_comercial}</div>
+                        <div><span className="font-semibold text-foreground/80">NIT:</span> <span className="font-mono text-[9px]">{brandingState.nit}</span></div>
+                        <div><span className="font-semibold text-foreground/80">Dirección:</span> {brandingState.direccion}</div>
+                        <div><span className="font-semibold text-foreground/80">Contacto:</span> {brandingState.email_corporativo} | {brandingState.telefono_principal}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simulación del Saludo en Portal Cliente */}
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Vista Previa Saludo Portal Cliente</span>
+                    <div className="border border-border/80 rounded-lg p-4 bg-gradient-to-r from-primary/5 via-secondary/5 to-transparent space-y-1.5">
+                      <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Portal Seguro B2B</span>
+                      <h4 className="text-xs font-bold text-foreground" style={{ fontFamily: brandingState.tipografia_principal }}>
+                        Bienvenido al Portal de {brandingState.nombre_comercial || "AeroMax Industrial"}
+                      </h4>
+                      <p className="text-[9px] text-muted-foreground">Consulte sus órdenes de trabajo de ingeniería y facturación electrónica en tiempo real.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: White Label */}
+              {activeTab === "whitelabel" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Maqueta de Botón y Tipografía</span>
+                    
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-muted-foreground block">Fuente: <strong className="text-foreground">{brandingState.tipografia_principal}</strong></span>
+                      <div 
+                        className="p-3 text-xs font-bold text-center rounded-lg text-white shadow-md transition-all uppercase tracking-wider font-display"
+                        style={{ 
+                          backgroundColor: brandingState.color_primario,
+                          borderRadius: brandingState.border_radius === "ninguno" ? "0px" : brandingState.border_radius === "sutil" ? "4px" : brandingState.border_radius === "redondeado" ? "12px" : "8px",
+                          fontFamily: brandingState.tipografia_principal
+                        }}
+                      >
+                        Botón Primario
+                      </div>
+
+                      <div 
+                        className="p-3 text-xs font-semibold text-center rounded-lg border border-border shadow-xs transition-all uppercase tracking-wider"
+                        style={{ 
+                          backgroundColor: "transparent",
+                          color: brandingState.color_primario,
+                          borderColor: brandingState.color_primario,
+                          borderRadius: brandingState.border_radius === "ninguno" ? "0px" : brandingState.border_radius === "sutil" ? "4px" : brandingState.border_radius === "redondeado" ? "12px" : "8px",
+                          fontFamily: brandingState.tipografia_principal
+                        }}
+                      >
+                        Botón Secundario
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ERP/Portal Sidebar Mockup */}
+                  <div className="p-4 rounded-xl border border-border bg-zinc-950 text-zinc-100 space-y-3 shadow-inner">
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase block font-semibold">// Simulación Barra Lateral ERP</span>
+                    <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                      <div className="w-5 h-5 rounded bg-primary flex items-center justify-center font-mono text-[9px] text-white font-bold" style={{ backgroundColor: brandingState.color_primario }}>
+                        {brandingState.nombre_comercial ? brandingState.nombre_comercial.slice(0, 2).toUpperCase() : "AM"}
+                      </div>
+                      <span className="text-[10px] font-bold tracking-tight truncate text-zinc-200">{brandingState.nombre_erp || "AeroMax ERP"}</span>
+                    </div>
+                    <div className="space-y-1.5 text-[9px] font-mono text-zinc-400">
+                      <div className="flex items-center gap-2 p-1.5 bg-zinc-900 rounded text-zinc-100 font-bold" style={{ borderLeft: `2px solid ${brandingState.color_primario}` }}>
+                        <span>➔</span> <span>Taller / OTs</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-1.5 opacity-60">
+                        <span>➔</span> <span>Facturas</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Integraciones */}
+              {activeTab === "integraciones" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Terminal de Conexiones B2B</span>
+                    <div className="bg-zinc-950 text-emerald-400 font-mono text-[9px] p-3 rounded-lg border border-zinc-800 space-y-1.5 leading-normal">
+                      <div className="text-zinc-500">// Simulación de API Gateway</div>
+                      <div>GET https://api.aeromax.co/v1/leads ?tenant={tenantParam || "default"}</div>
+                      <div className="text-zinc-400">STATUS: <span className="text-emerald-500 font-bold">200 OK</span></div>
+                      <div className="border-t border-zinc-800 pt-1 text-zinc-500">Response Payload:</div>
+                      <div className="text-amber-400 whitespace-pre overflow-x-auto text-[8px] leading-tight">
+{`{
+  "tenant": "${tenantParam || "AeroMax"}",
+  "telegram_notifications": "${telegramToken ? "ENABLED" : "DISABLED"}",
+  "webhook_target": "${webhookUrl ? webhookUrl.slice(0, 25) + "..." : "NONE"}"
+}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Estado de Canales Externos</span>
+                    <div className="space-y-2 text-[10px]">
+                      <div className="flex justify-between items-center p-2 rounded-lg bg-card border border-border">
+                        <span className="font-semibold text-foreground">Telegram Bot Api:</span>
+                        <Badge variant="secondary" className={`text-[8px] font-mono ${telegramToken ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground"}`}>
+                          {telegramToken ? "Vinculado" : "Desconectado"}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center p-2 rounded-lg bg-card border border-border">
+                        <span className="font-semibold text-foreground">Webhook de Notificación:</span>
+                        <Badge variant="secondary" className={`text-[8px] font-mono ${webhookUrl ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-muted text-muted-foreground"}`}>
+                          {webhookUrl ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Documentos */}
+              {activeTab === "documentos" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Encabezado y Pie de PDF Generado</span>
+                    <div className="border border-border/80 rounded-lg p-3 bg-card space-y-2 text-[10px] shadow-xs">
+                      <div className="border-b border-border pb-1.5 font-bold uppercase tracking-wider text-foreground truncate" style={{ fontFamily: brandingState.tipografia_principal }}>
+                        {brandingState.plantilla_pdf_encabezado || "AEROMAX INDUSTRIAL - REPORTE DE CÁLCULO"}
+                      </div>
+                      <div className="text-[9px] text-muted-foreground leading-relaxed py-2">
+                        Lorem ipsum dolor sit amet, cotizador preliminar de presiones y caudales.
+                      </div>
+                      <div className="border-t border-border/50 pt-1.5 text-[8px] text-muted-foreground truncate font-mono">
+                        {brandingState.plantilla_pdf_pie || "Pie de página estándar"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Plantilla de Asunto de Correo</span>
+                    <div className="border border-border/80 rounded-lg p-3 bg-card space-y-1.5 text-[10px]">
+                      <div className="font-semibold text-foreground">Asunto del Correo:</div>
+                      <div className="text-[9px] text-muted-foreground bg-muted/40 p-2 rounded leading-normal">
+                        {brandingState.plantilla_correo_asunto || "Reporte Técnico HVAC"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Versiones */}
+              {activeTab === "versiones" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Historial de Ajustes de Apariencia</span>
+                    <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                      {historyList.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground font-mono text-[9px]">No hay versiones previas guardadas.</div>
+                      ) : (
+                        historyList.map((ver, idx) => (
+                          <div key={ver.id} className="p-2 rounded-lg border border-border bg-card text-[10px] space-y-1">
+                            <div className="flex justify-between font-mono text-[9px] font-semibold text-primary" style={{ color: brandingState.color_primario }}>
+                              <span>v{historyList.length - idx}.0</span>
+                              <span>{new Date(ver.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground italic truncate">"{ver.description || "Sin descripción"}"</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab: Usuarios */}
+              {activeTab === "usuarios" && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-border bg-background/50 space-y-3">
+                    <span className="text-[9px] font-mono text-muted-foreground uppercase block font-semibold">// Políticas y Roles Activos</span>
+                    <div className="space-y-2">
+                      <div className="p-2.5 rounded-lg border border-border bg-card text-[10px] space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-foreground">Administrador General:</span>
+                          <span className="text-[8px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 rounded font-mono font-bold">2FA REQUERIDO</span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">Acceso total a Base de Datos y configuraciones regionales.</p>
+                      </div>
+                      <div className="p-2.5 rounded-lg border border-border bg-card text-[10px] space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-foreground">Operadores de Taller B2B:</span>
+                          <span className="text-[8px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 rounded font-mono font-bold">RESTRICTIVO</span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">Lectura exclusiva en órdenes de producción.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            <div className="text-[8px] text-muted-foreground leading-relaxed font-mono pt-2 border-t border-border">
+              * Cambie cualquier variable visual en los formularios para apreciar los cambios de color, tipografía y membretes al instante.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
