@@ -110,6 +110,8 @@ export default function InvoicesPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+
   // Sheet States
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [sheetMode, setSheetMode] = React.useState<"create" | "detail">("create");
@@ -129,6 +131,7 @@ export default function InvoicesPage() {
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const invoicesData = await getInvoices(tenantParam);
       const clientsData = await getClients(tenantParam);
@@ -136,7 +139,8 @@ export default function InvoicesPage() {
       setInvoices(invoicesData);
       setClients(clientsData.map(c => ({ id: c.id, name: c.name })));
     } catch (err: any) {
-      console.error(err);
+      console.error("Error loading invoices:", err);
+      setLoadError(err.message || "Error al cargar las facturas.");
     } finally {
       setLoading(false);
     }

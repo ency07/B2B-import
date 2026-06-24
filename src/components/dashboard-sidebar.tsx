@@ -59,7 +59,9 @@ export function DashboardSidebar() {
             : (config.logo_claro_url || config.logo_oscuro_url);
           setLogoUrl(logo || "");
           setCompanyName(config.nombre_comercial || (tenantParam === "apex" ? "Apex Logística" : "VentiTech"));
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Failed to parse cached branding config:", e);
+        }
       } else {
         setCompanyName(tenantParam === "apex" ? "Apex Logística" : "VentiTech");
       }

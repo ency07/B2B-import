@@ -29,7 +29,9 @@ export default function DashboardPage() {
         try {
           const config = JSON.parse(cached);
           setCompanyName(config.nombre_comercial || (tenantParam === "apex" ? "Apex Logística" : "VentiTech"));
-        } catch (e) {}
+        } catch (e) {
+          console.warn("Failed to parse cached branding config:", e);
+        }
       } else {
         setCompanyName(tenantParam === "apex" ? "Apex Logística" : "VentiTech");
       }

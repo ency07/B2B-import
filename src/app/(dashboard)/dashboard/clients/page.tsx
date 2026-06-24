@@ -96,6 +96,8 @@ export default function ClientsPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+
   // Sheet States
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [sheetMode, setSheetMode] = React.useState<"create" | "detail">("create");
@@ -117,11 +119,13 @@ export default function ClientsPage() {
 
   const loadClients = React.useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getClients(tenantParam);
       setClients(data);
     } catch (err: any) {
-      console.error(err);
+      console.error("Error loading clients:", err);
+      setLoadError(err.message || "Error al cargar los clientes.");
     } finally {
       setLoading(false);
     }

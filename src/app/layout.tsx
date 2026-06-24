@@ -72,7 +72,9 @@ export default function RootLayout({
                       }
                     }
                   }
-                } catch (e) {}
+                } catch (e) {
+                  console.warn("Failed to parse cached tenant config:", e);
+                }
               `,
             }}
           />

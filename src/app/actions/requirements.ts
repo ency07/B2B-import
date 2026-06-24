@@ -32,7 +32,7 @@ export async function getRequirements(tenantCode?: string | null): Promise<Requi
 
   if (error) {
     console.error("Error fetching requirements:", error);
-    return [];
+    throw new Error(error.message);
   }
 
   const rows = (data ?? []).map((row: any) => ({
