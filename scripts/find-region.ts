@@ -1,4 +1,6 @@
 import { Client } from 'pg';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const regions = [
   'us-east-1',
@@ -22,14 +24,19 @@ async function testRegion(region: string): Promise<boolean> {
   const host = `aws-0-${region}.pooler.supabase.com`;
   console.log(`Probando región: ${region} (${host})...`);
   
+  if (!process.env.DB_USER || !process.env.DB_PASSWORD) {
+    console.error('Error: DB_USER and DB_PASSWORD must be set in environment variables or .env file.');
+    process.exit(1);
+  }
+
   const client = new Client({
     host,
-    port: 5432,
-    user: 'postgres.jcsjfvrfsohahnoovjgf',
-    password: 'UuTt7pdS5O75mbR6',
-    database: 'postgres',
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'postgres',
     ssl: {
-      rejectUnauthorized: false
+      rejectUnauthorized: true
     },
     connectionTimeoutMillis: 5000
   });

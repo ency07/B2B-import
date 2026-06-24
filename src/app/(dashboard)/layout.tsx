@@ -95,7 +95,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <LayoutProvider>
       {/* Google Fonts Dynamic Loading */}
-      {activeConfig && activeConfig.tipografia_principal && (
+      {activeConfig && activeConfig.tipografia_principal && /^[a-zA-Z0-9\s-]+$/.test(activeConfig.tipografia_principal) && (
         <link
           rel="stylesheet"
           href={`https://fonts.googleapis.com/css2?family=${activeConfig.tipografia_principal.replace(/\s+/g, "+")}:wght@300;400;500;600;700&display=swap`}
@@ -115,8 +115,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 --warning: ${parseToHslChannels(activeConfig.color_warning)} !important;
                 --destructive: ${parseToHslChannels(activeConfig.color_danger)} !important;
                 --info: ${parseToHslChannels(activeConfig.color_info)} !important;
-                --radius: ${activeConfig.border_radius === "ninguno" ? "0px" : activeConfig.border_radius === "sutil" ? "4px" : activeConfig.border_radius === "redondeado" ? "12px" : activeConfig.border_radius} !important;
-                --font-sans: '${activeConfig.tipografia_principal}', var(--font-sans) !important;
+                --radius: ${activeConfig.border_radius === "ninguno" ? "0px" : activeConfig.border_radius === "sutil" ? "4px" : activeConfig.border_radius === "redondeado" ? "12px" : "8px"} !important;
+                --font-sans: '${(activeConfig.tipografia_principal || "Inter").replace(/[^a-zA-Z0-9\s-]/g, "")}', var(--font-sans) !important;
               }
             `,
           }}

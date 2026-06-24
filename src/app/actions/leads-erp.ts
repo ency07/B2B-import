@@ -63,17 +63,28 @@ export async function getLeads(tenantCode?: string | null): Promise<LeadRow[]> {
   })) as LeadRow[];
 }
 
+const VALID_LEAD_STATUSES = ["NUEVO", "EN_SEGUIMIENTO", "CALIFICADO", "RECHAZADO", "CONVERTIDO"] as const;
+
 /**
  * Actualiza el estado de un lead (Ejecutivo Comercial lo califica).
+ * Requires tenantCode to enforce tenant isolation.
  */
 export async function updateLeadStatus(
+  tenantCode: string | null,
   leadId: string,
   newStatus: "NUEVO" | "EN_SEGUIMIENTO" | "CALIFICADO" | "RECHAZADO" | "CONVERTIDO"
 ): Promise<void> {
+  if (!VALID_LEAD_STATUSES.includes(newStatus)) {
+    throw new Error(`Invalid status: ${newStatus}`);
+  }
+
+  const tenantId = await getTenantId(tenantCode);
+
   const { error } = await supabaseAdmin
     .from("leads")
     .update({ status: newStatus, updated_at: new Date().toISOString() })
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .eq("tenant_id", tenantId);
 
   if (error) {
     console.error("Error updating lead status:", error);
