@@ -75,16 +75,35 @@ export async function createRequirement(
   return data;
 }
 
+const VALID_REQ_STATUSES = ["BORRADOR", "NUEVO", "EN_REVISION", "DIAGNOSTICO", "COTIZACION", "COMPLETADO", "CANCELADO"] as const;
+const ALLOWED_UPDATE_FIELDS = ["engineering_user_id", "sales_user_id", "priority", "category"] as const;
+
 export async function updateRequirementStatus(
+  tenantCode: string | null,
   reqId: string,
   newStatus: string,
-  extra?: Record<string, any>
+  extra?: Record<string, unknown>
 ) {
-  const payload: any = { status: newStatus, ...extra };
+  if (!VALID_REQ_STATUSES.includes(newStatus as typeof VALID_REQ_STATUSES[number])) {
+    throw new Error(`Invalid status: ${newStatus}`);
+  }
+
+  const tenantId = await getTenantId(tenantCode);
+
+  const payload: Record<string, unknown> = { status: newStatus };
+  if (extra) {
+    for (const [key, value] of Object.entries(extra)) {
+      if (ALLOWED_UPDATE_FIELDS.includes(key as typeof ALLOWED_UPDATE_FIELDS[number])) {
+        payload[key] = value;
+      }
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from("requirements")
     .update(payload)
     .eq("id", reqId)
+    .eq("tenant_id", tenantId)
     .select()
     .single();
 

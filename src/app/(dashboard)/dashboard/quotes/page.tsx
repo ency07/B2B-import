@@ -142,7 +142,7 @@ export default function QuotesPage() {
         if (updated) {
           setSelectedQuote(updated);
           setItemsLoading(true);
-          const iList = await getQuoteItems(updated.id);
+          const iList = await getQuoteItems(tenantParam, updated.id);
           setItems(iList);
           setItemsLoading(false);
         }
@@ -163,7 +163,7 @@ export default function QuotesPage() {
     setSelectedQuote(quote);
     setItemsLoading(true);
     try {
-      const iList = await getQuoteItems(quote.id);
+      const iList = await getQuoteItems(tenantParam, quote.id);
       setItems(iList);
       setSalesSigned(false);
       setClientSigned(false);
@@ -240,7 +240,7 @@ export default function QuotesPage() {
     }
 
     try {
-      await updateQuoteStatus(selectedQuote.id, targetStatus);
+      await updateQuoteStatus(tenantParam, selectedQuote.id, targetStatus);
       await loadData();
       alert(`Estado de la cotización cambiado a: ${targetStatus}`);
     } catch (e: any) {

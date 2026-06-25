@@ -378,6 +378,7 @@ export default function LeadsPage() {
         open={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         onRefresh={loadLeads}
+        tenantCode={tenantParam}
       />
     </div>
   );
@@ -401,8 +402,8 @@ function KpiCard({ icon, label, value, sub, color }: {
   );
 }
 
-function LeadDetailSheet({ lead, open, onClose, onRefresh }: {
-  lead: LeadRow | null; open: boolean; onClose: () => void; onRefresh: () => void;
+function LeadDetailSheet({ lead, open, onClose, onRefresh, tenantCode }: {
+  lead: LeadRow | null; open: boolean; onClose: () => void; onRefresh: () => void; tenantCode: string | null;
 }) {
   const [updating, setUpdating] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"contact" | "hvac" | "audit">("contact");
@@ -419,7 +420,7 @@ function LeadDetailSheet({ lead, open, onClose, onRefresh }: {
   const handleStatusChange = async (status: "NUEVO" | "EN_SEGUIMIENTO" | "CALIFICADO" | "RECHAZADO" | "CONVERTIDO") => {
     setUpdating(true);
     try {
-      await updateLeadStatus(lead.id, status);
+      await updateLeadStatus(tenantCode, lead.id, status);
       await onRefresh();
       onClose();
     } catch (err: any) {

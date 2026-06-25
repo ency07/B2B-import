@@ -182,7 +182,7 @@ export default function RequirementsPage() {
     if (!selectedReq) return;
     try {
       const mockEngId = tenantParam === "apex" ? "b9000000-0000-0000-0000-000000000000" : "a9000000-0000-0000-0000-000000000000";
-      await updateRequirementStatus(selectedReq.id, "DIAGNOSTICO", { engineering_user_id: mockEngId });
+      await updateRequirementStatus(tenantParam, selectedReq.id, "DIAGNOSTICO", { engineering_user_id: mockEngId });
       setAssignedEngineer("Ing. Carlos Mendoza");
       await loadData();
     } catch (e: any) {
@@ -199,7 +199,7 @@ export default function RequirementsPage() {
     if (!selectedReq) return;
     try {
       const mockSalesId = tenantParam === "apex" ? "b9000000-0000-0000-0000-000000000000" : "a9000000-0000-0000-0000-000000000000";
-      await updateRequirementStatus(selectedReq.id, "COTIZACION", { sales_user_id: mockSalesId });
+      await updateRequirementStatus(tenantParam, selectedReq.id, "COTIZACION", { sales_user_id: mockSalesId });
       await loadData();
       alert("Flujo avanzado con éxito. El requerimiento técnico se encuentra ahora en fase de COTIZACION.");
     } catch (e: any) {

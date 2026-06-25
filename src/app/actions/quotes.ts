@@ -73,11 +73,14 @@ export async function createQuote(
   return data;
 }
 
-export async function getQuoteItems(quoteId: string) {
+export async function getQuoteItems(tenantCode: string | null, quoteId: string) {
+  const tenantId = await getTenantId(tenantCode);
+
   const { data, error } = await supabaseAdmin
     .from("quote_items")
     .select("*")
     .eq("quote_id", quoteId)
+    .eq("tenant_id", tenantId)
     .order("item_order", { ascending: true });
 
   if (error) {
@@ -128,11 +131,20 @@ export async function addQuoteItem(
   return data;
 }
 
-export async function updateQuoteStatus(quoteId: string, status: string) {
+const VALID_QUOTE_STATUSES = ["BORRADOR", "EN_REVISION", "ENVIADA", "APROBADA", "RECHAZADA", "VENCIDA"] as const;
+
+export async function updateQuoteStatus(tenantCode: string | null, quoteId: string, status: string) {
+  if (!VALID_QUOTE_STATUSES.includes(status as typeof VALID_QUOTE_STATUSES[number])) {
+    throw new Error(`Invalid status: ${status}`);
+  }
+
+  const tenantId = await getTenantId(tenantCode);
+
   const { data, error } = await supabaseAdmin
     .from("quotes")
     .update({ status })
     .eq("id", quoteId)
+    .eq("tenant_id", tenantId)
     .select()
     .single();
 
