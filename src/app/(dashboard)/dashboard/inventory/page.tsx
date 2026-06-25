@@ -9,27 +9,18 @@ import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Search, ChevronLeft, ChevronRight, ArrowRightLeft, Sparkles } from "lucide-react";
+import { Search, ArrowRightLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { PageHeader, LoadingState, ErrorAlert, DataTable, SheetFormActions } from "@/components/shared";
 import {
   Sheet,
   SheetContent,
@@ -238,22 +229,12 @@ export default function InventoryPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo de Almacenes
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Control de Inventario
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Monitoreo de existencias de materiales, control de reservas y registro de movimientos de stock.
-          </p>
-        </div>
-
-        {/* Sheet Slide-out */}
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <PageHeader
+        moduleLabel="Módulo de Almacenes"
+        title="Control de Inventario"
+        description="Monitoreo de existencias de materiales, control de reservas y registro de movimientos de stock."
+        action={
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
               <ArrowRightLeft className="w-4 h-4" /> Registrar Movimiento
@@ -267,11 +248,7 @@ export default function InventoryPage() {
                 <p className="text-xs text-muted-foreground">Ingresa una entrada o salida física de inventario para una bodega.</p>
               </div>
 
-              {errorMsg && (
-                <div className="p-3.5 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive font-mono">
-                  {errorMsg}
-                </div>
-              )}
+              <ErrorAlert message={errorMsg} />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
@@ -380,21 +357,18 @@ export default function InventoryPage() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                    <Button type="button" variant="outline" onClick={() => setIsSheetOpen(false)} disabled={submitting} className="border-border text-foreground text-xs hover:bg-accent cursor-pointer bg-card">
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs cursor-pointer px-4">
-                      {submitting ? <Spinner size="sm" className="mr-2 text-primary-foreground" /> : null}
-                      Aplicar Movimiento
-                    </Button>
-                  </div>
+                  <SheetFormActions
+                    submitting={submitting}
+                    onCancel={() => setIsSheetOpen(false)}
+                    submitLabel="Aplicar Movimiento"
+                  />
                 </form>
               </Form>
             </div>
           </SheetContent>
         </Sheet>
-      </div>
+        }
+      />
 
       {/* Filter and table */}
       <div className="space-y-4">
@@ -409,76 +383,13 @@ export default function InventoryPage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 border border-border rounded-lg bg-card/30">
-            <Spinner size="lg" className="text-muted-foreground mb-2" />
-            <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest font-bold">Cargando existencias...</span>
-          </div>
+          <LoadingState message="Cargando existencias..." />
         ) : (
-          <>
-            <div className="rounded-lg border border-border bg-card/45 backdrop-blur-md overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id} className="border-b border-border bg-accent/40 hover:bg-accent/40">
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id} className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground py-3">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id} className="hover:bg-accent/30 cursor-pointer border-b border-border/40 transition-colors">
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-2 px-3">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-xs text-muted-foreground font-mono uppercase tracking-widest">
-                        // No se encontraron artículos en stock.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-              <div>
-                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="h-8 px-3 border-border bg-card hover:bg-accent text-foreground cursor-pointer"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="h-8 px-3 border-border bg-card hover:bg-accent text-foreground cursor-pointer"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
+          <DataTable
+            table={table}
+            columnCount={6}
+            emptyMessage="// No se encontraron artículos en stock."
+          />
         )}
       </div>
     </div>

@@ -27,7 +27,6 @@ import {
   Eye,
   Activity,
   Database,
-  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageHeader, TabNavigation } from "@/components/shared";
+import { formatCop, formatUsd } from "@/utils/format";
 import {
   Sheet,
   SheetContent,
@@ -64,14 +65,6 @@ const statusConfig: Record<string, { label: string; variantStyle: string }> = {
   RECHAZADO:      { label: "Rechazado",      variantStyle: "border-destructive/20 bg-destructive/10 text-destructive" },
   CONVERTIDO:     { label: "Convertido",     variantStyle: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-450" },
 };
-
-function formatCop(val: number) {
-  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(val);
-}
-
-function formatUsd(val: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Página Principal
@@ -264,20 +257,11 @@ export default function LeadsPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-1 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo CRM VentiTech
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Pipeline de Leads
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Calificación y asignación de prospectos capturados desde la calculadora y el wizard técnico.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        moduleLabel="Módulo CRM VentiTech"
+        title="Pipeline de Leads"
+        description="Calificación y asignación de prospectos capturados desde la calculadora y el wizard técnico."
+      />
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -465,26 +449,15 @@ function LeadDetailSheet({ lead, open, onClose, onRefresh }: {
               </div>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="flex border-b border-border text-xs pt-2 font-mono uppercase tracking-wider text-[10px]">
-              {[
+            <TabNavigation
+              tabs={[
                 { id: "contact", label: "Contacto B2B" },
                 { id: "hvac", label: "Cálculos HVAC" },
                 { id: "audit", label: "Log de Auditoría" }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`pb-2.5 px-4 font-medium transition-colors border-b-2 relative -mb-[2px] cursor-pointer ${
-                    activeTab === tab.id 
-                      ? "border-primary text-foreground" 
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              activeTab={activeTab}
+              onTabChange={(id) => setActiveTab(id as "contact" | "hvac" | "audit")}
+            />
           </div>
 
           {/* Body Content */}

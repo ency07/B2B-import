@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  Sparkles,
   Search,
   Plus,
   ArrowRight,
@@ -17,14 +16,14 @@ import {
   FileCheck,
   Send,
   Printer,
-  ChevronLeft,
-  ChevronRight
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { PageHeader, LoadingState, ErrorAlert, SheetFormActions } from "@/components/shared";
+import { formatCurrency } from "@/utils/format";
 import {
   Form,
   FormControl,
@@ -56,24 +55,6 @@ import {
   updateQuoteStatus, 
   QuoteRow 
 } from "@/app/actions/quotes";
-
-// Formatting utility for COP/USD
-const formatCurrency = (amount: number) => {
-  if (amount < 100000) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 const quoteSchema = z.object({
   clientId: z.string().min(1, { message: "Seleccione un cliente B2B." }),
@@ -255,22 +236,12 @@ export default function QuotesPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-primary" /> Módulo Comercial B2B
-          </div>
-          <h1 className="text-base font-mono uppercase tracking-widest font-bold text-foreground mt-1">
-            Cotizaciones y Propuestas
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Creación de presupuestos comerciales, desglose de SKUs y flujos de aprobación.
-          </p>
-        </div>
-
-        {/* Sheet Slide-out to Create Quote */}
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+      <PageHeader
+        moduleLabel="Módulo Comercial B2B"
+        title="Cotizaciones y Propuestas"
+        description="Creación de presupuestos comerciales, desglose de SKUs y flujos de aprobación."
+        action={
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
               <Plus className="w-4 h-4" /> Nueva Cotización
@@ -284,11 +255,7 @@ export default function QuotesPage() {
                 <p className="text-xs text-muted-foreground">Genera una nueva propuesta comercial vinculada a una cuenta y requerimiento técnico.</p>
               </div>
 
-              {errorMsg && (
-                <div className="p-3.5 rounded-md bg-destructive/10 border border-destructive/20 text-xs text-destructive font-mono">
-                  {errorMsg}
-                </div>
-              )}
+              <ErrorAlert message={errorMsg} />
 
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -352,21 +319,18 @@ export default function QuotesPage() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end gap-3 pt-6 border-t border-border mt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsSheetOpen(false)} disabled={submitting} className="border-border text-foreground text-xs hover:bg-accent cursor-pointer bg-card">
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="bg-primary hover:bg-primary/95 text-primary-foreground text-xs cursor-pointer px-4">
-                      {submitting ? <Spinner size="sm" className="mr-2 text-primary-foreground" /> : null}
-                      Crear Cotización
-                    </Button>
-                  </div>
+                  <SheetFormActions
+                    submitting={submitting}
+                    onCancel={() => setIsSheetOpen(false)}
+                    submitLabel="Crear Cotización"
+                  />
                 </form>
               </Form>
             </div>
           </SheetContent>
         </Sheet>
-      </div>
+        }
+      />
 
       {/* Grid Layout 40/60 Split */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -384,10 +348,7 @@ export default function QuotesPage() {
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 border border-border rounded-xl bg-card/30">
-              <Spinner size="lg" className="text-muted-foreground mb-2" />
-              <span className="text-xs text-muted-foreground font-mono uppercase tracking-widest font-bold">Cargando cotizaciones...</span>
-            </div>
+            <LoadingState message="Cargando cotizaciones..." />
           ) : (
             <div className="space-y-3 max-h-[640px] overflow-y-auto pr-1">
               {filteredQuotes.map(q => {
