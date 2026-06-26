@@ -27,7 +27,11 @@ import {
   FileText,
   CreditCard,
   AlertCircle,
-  Receipt
+  Receipt,
+  Download,
+  FileSpreadsheet,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -63,6 +67,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getInvoices, createInvoice, getClients } from "@/app/actions";
+import { updateInvoice, softDeleteInvoice, getInvoicePdfData, exportInvoicesToExcel } from "@/app/actions/exports-finance";
+import { exportToExcel, exportToCsv, downloadInvoicePdf } from "@/utils/file-exports";
 
 // Zod schema for invoice creation
 const invoiceSchema = z.object({
@@ -311,10 +317,13 @@ export default function InvoicesPage() {
           </p>
         </div>
 
-        {/* Action Button using Sheet */}
-        <Button onClick={handleOpenCreate} className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
-          <Plus className="w-4 h-4" /> Emitir Factura
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={async () => { try { const data = await exportInvoicesToExcel(tenantParam); exportToExcel(data, `Facturas_${new Date().toISOString().substring(0, 10)}`, "Facturas"); } catch (err) { console.error(err); } }} variant="outline" className="text-xs border-border bg-card hover:bg-accent text-foreground cursor-pointer flex items-center gap-1"><FileSpreadsheet className="w-3.5 h-3.5" />Excel</Button>
+          <Button onClick={async () => { try { const data = await exportInvoicesToExcel(tenantParam); exportToCsv(data, `Facturas_${new Date().toISOString().substring(0, 10)}`); } catch (err) { console.error(err); } }} variant="outline" className="text-xs border-border bg-card hover:bg-accent text-foreground cursor-pointer flex items-center gap-1"><Download className="w-3.5 h-3.5" />CSV</Button>
+          <Button onClick={handleOpenCreate} className="flex items-center gap-2 cursor-pointer bg-card hover:bg-accent border border-border text-foreground text-xs py-4 px-6 rounded-md shadow-sm transition-all active:scale-[0.98]">
+            <Plus className="w-4 h-4" /> Emitir Factura
+          </Button>
+        </div>
       </div>
 
       {/* Filter and table */}
@@ -611,7 +620,12 @@ export default function InvoicesPage() {
                   {/* PDF Download Mock Action */}
                   <div className="pt-4 border-t border-border">
                     <Button 
-                      onClick={() => alert("Generando descarga de PDF CFDI / Factura...")}
+                      onClick={async () => {
+  try {
+    const data = await getInvoicePdfData(tenantParam, selectedInvoice.id);
+    downloadInvoicePdf(data as unknown as Parameters<typeof downloadInvoicePdf>[0]);
+  } catch (err) { console.error("PDF generation error:", err); }
+}}
                       className="w-full bg-card border border-border text-foreground hover:bg-accent text-xs h-9 font-medium flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                     >
                       <FileText className="w-4 h-4 text-primary" /> Descargar Factura (PDF / XML)

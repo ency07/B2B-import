@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Wind, Search, Activity, ArrowRight } from "lucide-react";
+import { CatalogSearch } from "@/components/CatalogSearch";
 import { CatalogCategory } from "@/app/actions/catalog";
 
 // Import modular subcomponents
@@ -368,6 +369,14 @@ export default function CatalogView({ catalog, branding, tenantCode }: CatalogVi
               Contacto
             </a>
           </nav>
+
+          {/* Buscador Global de Catálogo */}
+          <div className="w-full flex justify-center mb-8">
+            <CatalogSearch tenantCode={tenantCode} onProductSelect={(product) => {
+              const detailModal = document.querySelector('[data-product-detail-trigger]') as HTMLElement;
+              if (detailModal) detailModal.click();
+            }} />
+          </div>
 
           {/* Buscador de OTs y Enlaces */}
           <div className="flex items-center gap-4">
